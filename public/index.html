@@ -37,15 +37,27 @@
       <div id="map"></div>
       <p class="hint">Google Maps needs an API key to display inside this app. You can still open saved coordinates in Google Maps.</p>
     </section>
-    <p class="privacy">Privacy: this starter saves contacts and locations on this device only. It does not track another person. To see another person's live location, they must explicitly share it through a secure backend.</p>
+    <p class="privacy">Privacy: this starter saves contacts and locations in this browser on this device only. Call Now opens your phone dialer so you can confirm the call. It does not track another person. Live location sharing requires the person's explicit consent and a secure backend.</p>
   </main>
 
   <dialog id="personDialog">
     <form id="personForm" method="dialog">
-      <h2 id="dialogTitle">Add Family</h2>
-      <label>Full name<input id="personName" required maxlength="80" placeholder="e.g. Amina"></label>
+      <h2 id="dialogTitle">Add Family Member</h2>
+      <label>Full name<input id="personName" required maxlength="80" autocomplete="name" placeholder="e.g. Amina"></label>
       <label>Relationship / label<input id="personRelation" maxlength="60" placeholder="e.g. Mother, Cousin, Best friend"></label>
-      <label>Phone (optional)<input id="personPhone" type="tel" maxlength="30" placeholder="Phone number"></label>
+      <label>Phone number<input id="personPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="e.g. +91 98765 43210"></label>
+      <label>Person type
+        <select id="personType">
+          <option value="family">Family</option>
+          <option value="friend">Friend</option>
+        </select>
+      </label>
+      <details class="coordinates-fields">
+        <summary>Saved location coordinates (optional)</summary>
+        <p class="hint">Leave both blank if no location is saved. Enter both to set or change the location.</p>
+        <label>Latitude<input id="personLat" type="number" step="any" min="-90" max="90" placeholder="e.g. 10.0159"></label>
+        <label>Longitude<input id="personLng" type="number" step="any" min="-180" max="180" placeholder="e.g. 76.3419"></label>
+      </details>
       <div class="dialog-actions">
         <button type="button" id="cancelDialog" class="secondary">Cancel</button>
         <button type="submit" class="primary">Save person</button>
@@ -54,7 +66,7 @@
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="/app.js"></script>
-  <!-- After adding your Google Maps JavaScript API key, uncomment the next line and replace YOUR_API_KEY.
+  <!-- To show an embedded Google Map, configure a restricted Google Maps JavaScript API key.
   <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"></script>
   -->
 </body>
