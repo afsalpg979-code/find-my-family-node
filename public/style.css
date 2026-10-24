@@ -16,3 +16,18 @@ select{font:inherit;border:1px solid #d6e0ea;border-radius:10px;padding:12px;min
   .person-actions .call-button,.person-actions button{font-size:12px;padding:9px}
   .location-card{align-items:flex-start;flex-direction:column}
 }
+
+/* Find My Family PWA header and install card */
+.logo{flex:0 0 48px;overflow:hidden;background:#0c9e75;padding:0}
+.logo img{display:block;width:100%;height:100%}
+.brand-copy{min-width:0;flex:1}
+.install-btn,.share-btn{border:1px solid #426176;border-radius:11px;padding:9px 11px;background:#173a52;color:#fff;font:700 12px system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.install-btn{background:#18b981;border-color:#18b981;color:#062d25}
+.install-btn[hidden]{display:none}
+.share-btn{background:transparent}
+.install-tip{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #ccefe1;border-radius:16px;background:linear-gradient(115deg,#e9fff5,#fff)}
+.install-tip[hidden]{display:none}
+.install-tip-icon{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#d0f8e7;color:#087b54;display:grid;place-items:center;font-size:21px;font-weight:900}
+.install-tip b{font-size:14px;color:#123c32}
+.install-tip p{margin:3px 0 0;color:#62786f;font-size:12px;line-height:1.45}
+@media(max-width:480px){.topbar{gap:8px;padding:14px 10px}.topbar h1{font-size:17px}.topbar p{font-size:11px}.install-btn,.share-btn{padding:8px 9px;font-size:11px}.logo{width:42px;height:42px;flex-basis:42px}}
