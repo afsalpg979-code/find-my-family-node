@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10243a">
+  <title>Find My Family</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">📍</div>
+    <div><h1>Find My Family</h1><p>Stay connected. Stay safe.</p></div>
+  </header>
+
+  <main>
+    <section class="location-card">
+      <div><h2>My Location</h2><p id="locationStatus">Location not captured yet</p></div>
+      <button id="myLocationBtn" class="primary">Add My Location</button>
+    </section>
+
+    <section class="quick-actions">
+      <button class="tile" data-view="family"><span>👨‍👩‍👧‍👦</span><b>Family</b><small>View family</small></button>
+      <button class="tile" data-view="friends"><span>🤝</span><b>Friends</b><small>View friends</small></button>
+      <button class="tile" id="addFamilyBtn"><span>➕</span><b>Add Family</b><small>Save a person</small></button>
+      <button class="tile" id="addFriendBtn"><span>💚</span><b>Add Friend</b><small>Save a person</small></button>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading"><h2 id="peopleHeading">Family & Friends</h2><span id="peopleCount">0 people</span></div>
+      <div id="peopleList" class="people-list"></div>
+      <p id="emptyState" class="empty">No people added yet. Use Add Family or Add Friend to get started.</p>
+    </section>
+
+    <section class="panel map-panel">
+      <div class="section-heading"><h2>Map</h2><button id="openMapBtn" class="secondary">Open in Google Maps ↗</button></div>
+      <div id="map"></div>
+      <p class="hint">Google Maps needs an API key to display inside this app. You can still open saved coordinates in Google Maps.</p>
+    </section>
+    <p class="privacy">Privacy: this starter saves contacts and locations on this device only. It does not track another person. To see another person's live location, they must explicitly share it through a secure backend.</p>
+  </main>
+
+  <dialog id="personDialog">
+    <form id="personForm" method="dialog">
+      <h2 id="dialogTitle">Add Family</h2>
+      <label>Full name<input id="personName" required maxlength="80" placeholder="e.g. Amina"></label>
+      <label>Relationship / label<input id="personRelation" maxlength="60" placeholder="e.g. Mother, Cousin, Best friend"></label>
+      <label>Phone (optional)<input id="personPhone" type="tel" maxlength="30" placeholder="Phone number"></label>
+      <div class="dialog-actions">
+        <button type="button" id="cancelDialog" class="secondary">Cancel</button>
+        <button type="submit" class="primary">Save person</button>
+      </div>
+    </form>
+  </dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js"></script>
+  <!-- After adding your Google Maps JavaScript API key, uncomment the next line and replace YOUR_API_KEY.
+  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"></script>
+  -->
+</body>
+</html>
