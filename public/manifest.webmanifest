@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "Find My Family",
+  "short_name": "My Family",
+  "description": "Keep family contacts close and open saved locations.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f6fa",
+  "theme_color": "#10243a",
+  "categories": ["lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/family-pin.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
