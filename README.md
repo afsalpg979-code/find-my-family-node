@@ -1,6 +1,6 @@
 # Find My Family — Termux starter
 
-A mobile-friendly starter app that runs locally in Termux. It includes Family/Friends lists, Add Family, Add Friend, GPS capture, saved coordinates, and Go Now links that open Google Maps directions.
+A mobile-friendly starter app that runs locally in Termux. It includes Family/Friends lists, Add Family, Add Friend, GPS capture, saved coordinates, Google Maps directions, a Call Now dialer shortcut, and full person editing.
 
 ## Run on Android using Termux
 
@@ -39,3 +39,11 @@ To show the real interactive Google map:
 - Live family/friend tracking requires each person to consent, sign in on their own device, share location updates through a secure backend, and be able to stop sharing.
 - For production, add authentication, a database, HTTPS, access controls, retention/deletion rules, and location-sharing invitations.
 - Browser geolocation works only in secure contexts; `localhost` is treated as a secure context by modern browsers. Allow location permission for the site.
+
+## Contact actions and editing
+
+- **Call Now** opens Android's phone dialer using the saved phone number. The user reviews the number and confirms the call in the dialer; the website does not place calls silently.
+- **Edit** opens a form to update the person's name, relationship/label, phone number, family/friend type, and saved latitude/longitude.
+- **Save Changes** persists edits in the same browser local storage key used by the previous version, so existing people in that browser remain available.
+- If a person has no phone number, the call action is disabled until a number is added.
+- Contact data is currently stored in this device's browser, not in a server database. Clearing browser site data can remove it; export/backup is recommended before changing browsers or devices.
