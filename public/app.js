@@ -205,3 +205,57 @@ function showMap(lat, lng, label) {
   $("mapDirections").onclick = () => window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, "_blank", "noopener");
 }
 render();
+
+
+// Installable PWA support. Installation requires HTTPS or localhost.
+let deferredInstallPrompt = null;
+const installButton = $("installBtn");
+const installTip = $("installTip");
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  installButton.hidden = false;
+});
+installButton?.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) {
+    toast("In Chrome, open the menu and choose 'Add to Home screen' or 'Install app'.");
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installButton.hidden = true;
+});
+window.addEventListener("appinstalled", () => {
+  installButton.hidden = true;
+  if (installTip) installTip.hidden = true;
+  toast("Find My Family installed on this device.");
+});
+
+$("shareAppBtn")?.addEventListener("click", async () => {
+  const shareData = {
+    title: "Find My Family",
+    text: "Open Find My Family to keep important family contacts close.",
+    url: window.location.href
+  };
+  try {
+    if (navigator.share) await navigator.share(shareData);
+    else if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(window.location.href);
+      toast("App link copied. Send it to your family after the app is hosted online.");
+    } else {
+      toast("Copy this app's address from your browser and send it to your family.");
+    }
+  } catch (error) {
+    if (error?.name !== "AbortError") toast("Could not share the app link from this browser.");
+  }
+});
+
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // The app still works if offline installation is unavailable.
+    });
+  });
+}
