@@ -4,16 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#10243a">
+  <meta name="description" content="Keep your family contacts close, call quickly, and open saved locations with Find My Family.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/family-pin.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/family-pin.svg">
   <title>Find My Family</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <header class="topbar">
-    <div class="logo">📍</div>
-    <div><h1>Find My Family</h1><p>Stay connected. Stay safe.</p></div>
+    <div class="logo" aria-hidden="true"><img src="/icons/family-pin.svg" alt=""></div>
+    <div class="brand-copy"><h1>Find My Family</h1><p>Stay connected. Stay safe.</p></div>
+    <button id="installBtn" class="install-btn" hidden>Install app</button>
+    <button id="shareAppBtn" class="share-btn" type="button">Share app</button>
   </header>
 
   <main>
+    <section class="install-tip" id="installTip">
+      <span class="install-tip-icon" aria-hidden="true">✦</span>
+      <div><b>Keep your family close</b><p>Install Find My Family on your home screen for quick access.</p></div>
+    </section>
     <section class="location-card">
       <div><h2>My Location</h2><p id="locationStatus">Location not captured yet</p></div>
       <button id="myLocationBtn" class="primary">Add My Location</button>
@@ -34,10 +44,10 @@
 
     <section class="panel map-panel">
       <div class="section-heading"><h2>Map</h2><button id="openMapBtn" class="secondary">Open in Google Maps ↗</button></div>
-      <div id="map"></div>
+      <div id="map"><div class="map-placeholder"><strong>📍 Your map space</strong><p>Save a location to view coordinates and open directions in Google Maps.</p></div></div>
       <p class="hint">Google Maps needs an API key to display inside this app. You can still open saved coordinates in Google Maps.</p>
     </section>
-    <p class="privacy">Privacy: this starter saves contacts and locations in this browser on this device only. Call Now opens your phone dialer so you can confirm the call. It does not track another person. Live location sharing requires the person's explicit consent and a secure backend.</p>
+    <p class="privacy">Privacy: contacts and saved coordinates are currently stored in this browser on this device only. Call Now opens your phone dialer so you can confirm the call. Location is not shared or tracked automatically. Cross-device family sharing needs secure accounts and an online database.</p>
   </main>
 
   <dialog id="personDialog">
@@ -66,8 +76,5 @@
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="/app.js"></script>
-  <!-- To show an embedded Google Map, configure a restricted Google Maps JavaScript API key.
-  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"></script>
-  -->
 </body>
 </html>
