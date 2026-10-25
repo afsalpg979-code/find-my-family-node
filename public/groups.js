@@ -1,64 +1,43 @@
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, query, where, runTransaction, onSnapshot, addDoc, serverTimestamp, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { firebaseConfig } from "/firebase-config.js";
 (() => {
 "use strict";
-const PEOPLE_KEY="find-my-family-people-v1", GROUPS_KEY="find-my-family-groups-v1";
 const $=id=>document.getElementById(id);
-let groups=read(GROUPS_KEY,[]), people=read(PEOPLE_KEY,[]), editingGroupId=null, activeChatId=null;
-function read(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));return Array.isArray(v)?v:fallback}catch{return fallback}}
-function saveGroups(){try{localStorage.setItem(GROUPS_KEY,JSON.stringify(groups));return true}catch{notify("Could not save groups. Check device storage.");return false}}
-function notify(message){const t=$("toast");if(!t)return;t.textContent=message;t.style.display="block";clearTimeout(notify.timer);notify.timer=setTimeout(()=>t.style.display="none",2800)}
-function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function makeId(){return crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2)}
-function syncPeople(){people=read(PEOPLE_KEY,[])}
-function membersFor(g){return(g.memberIds||[]).map(id=>people.find(p=>String(p.id)===String(id))).filter(Boolean)}
-function renderGroups(){
- syncPeople();
- ["family","friend"].forEach(type=>{
-  const list=$(type==="family"?"familyGroupsList":"friendsGroupsList"), empty=$(type==="family"?"familyGroupsEmpty":"friendsGroupsEmpty");
-  const items=groups.filter(g=>g.type===type);
-  list.innerHTML=items.map(g=>{
-   const members=membersFor(g), last=(g.messages||[]).slice(-1)[0], preview=last?last.text:"No messages yet — start the conversation";
-   return '<article class="group-card"><div class="group-avatar">'+(type==="family"?"👨‍👩‍👧‍👦":"🤝")+'</div><div class="group-card-info"><b>'+esc(g.name)+'</b><small>'+members.length+' '+(members.length===1?"member":"members")+'</small><p>'+esc(preview)+'</p></div><div class="group-card-actions"><button class="primary" type="button" data-group-chat="'+esc(g.id)+'">Chat</button><button class="secondary" type="button" data-group-edit="'+esc(g.id)+'">Edit</button><button class="secondary" type="button" data-group-delete="'+esc(g.id)+'">Delete</button></div></article>';
-  }).join("");
-  empty.style.display=items.length?"none":"block";
- });
- document.querySelectorAll("[data-group-chat]").forEach(b=>b.onclick=()=>openChat(b.dataset.groupChat));
- document.querySelectorAll("[data-group-edit]").forEach(b=>b.onclick=()=>openGroupForm(b.dataset.groupEdit));
- document.querySelectorAll("[data-group-delete]").forEach(b=>b.onclick=()=>deleteGroup(b.dataset.groupDelete));
+const configured=!!(firebaseConfig.apiKey&&!firebaseConfig.apiKey.startsWith("REPLACE_WITH_")&&firebaseConfig.projectId&&!firebaseConfig.projectId.startsWith("REPLACE_WITH_")&&firebaseConfig.appId&&!firebaseConfig.appId.startsWith("REPLACE_WITH_"));
+let db=null,auth=null,user=null,groups=[],groupUnsub=null,messageUnsub=null,activeId=null;
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(s){const t=$("toast");t.textContent=s;t.style.display="block";clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display="none",3500)}
+function ready(){if(!configured){toast("Set your Firebase web config in public/firebase-config.js first.");return false}if(!user){toast("Sign in with your email account first.");return false}return true}
+function codeFor(type){const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",b=new Uint8Array(6);crypto.getRandomValues(b);return(type==="family"?"FAM-":"FRI-")+Array.from(b,x=>a[x%a.length]).join("")}
+function ensureJoinUI(){
+ const quick=document.querySelector(".quick-actions");
+ if(quick&&!$("joinGroupBtn")){const b=document.createElement("button");b.className="tile group-tile";b.id="joinGroupBtn";b.innerHTML="<span>🔑</span><b>Join Group</b><small>Enter a group code</small>";quick.appendChild(b)}
+ const form=$("groupForm");
+ if(form){$("groupMemberChoices").hidden=true;$("groupNoPeople").hidden=true;const p=form.querySelector(".group-members-title");if(p)p.remove();let hint=form.querySelector(".group-code-hint");if(!hint){hint=document.createElement("p");hint.className="hint group-code-hint";hint.textContent="A unique code will be created automatically. Share it only with people you trust.";form.insertBefore(hint,form.querySelector(".dialog-actions"))}const submit=form.querySelector('button[type="submit"]');if(submit)submit.textContent="Create Group & Code"}
+ if(!$("joinGroupDialog")){const d=document.createElement("dialog");d.id="joinGroupDialog";d.className="group-dialog";d.innerHTML='<form id="joinGroupForm"><div class="group-dialog-heading"><div><p class="eyebrow">JOIN YOUR CIRCLE</p><h2>Join a Group</h2></div><button type="button" id="closeJoinGroup" class="icon-close">×</button></div><label>Group code<input id="joinGroupCode" maxlength="12" required placeholder="FAM-7K9P2X" autocapitalize="characters"></label><p class="hint">Enter the code shared by the group creator.</p><div class="dialog-actions"><button type="button" id="cancelJoinGroup" class="secondary">Cancel</button><button class="primary" type="submit">Join Group</button></div></form>';document.body.appendChild(d)}
 }
-function openGroupForm(typeOrId){
- syncPeople();const existing=groups.find(g=>String(g.id)===String(typeOrId)), type=existing?existing.type:typeOrId;
- editingGroupId=existing?existing.id:null;
- $("groupDialogTitle").textContent=existing?"Edit Group":(type==="family"?"Create Family Group":"Create Friends Group");
- $("groupName").value=existing?existing.name:"";
- const candidates=people.filter(p=>(p.type||"family")===type);
- $("groupMemberChoices").innerHTML=candidates.map(p=>{
-  const checked=(existing?.memberIds||[]).some(mid=>String(mid)===String(p.id));
-  return '<label class="group-member-option"><input type="checkbox" name="groupMember" value="'+esc(p.id)+'" '+(checked?"checked":"")+'><span class="group-member-avatar">'+esc((p.name||"?").trim().slice(0,1).toUpperCase())+'</span><span><b>'+esc(p.name)+'</b><small>'+esc(p.relation||(type==="family"?"Family member":"Friend"))+'</small></span></label>';
- }).join("");
- $("groupNoPeople").style.display=candidates.length?"none":"block";
- $("groupForm").dataset.type=type;$("groupDialog").showModal();
+function render(){
+ ["family","friend"].forEach(type=>{const list=$(type==="family"?"familyGroupsList":"friendsGroupsList"),empty=$(type==="family"?"familyGroupsEmpty":"friendsGroupsEmpty"),items=groups.filter(g=>g.type===type);list.innerHTML=items.map(g=>'<article class="group-card"><div class="group-avatar">'+(type==="family"?"👨‍👩‍👧‍👦":"🤝")+'</div><div class="group-card-info"><b>'+esc(g.name)+'</b><small>'+(g.memberUids||[]).length+' members</small><p>'+esc(g.lastMessage||"No messages yet")+'</p><small>Group code: <strong>'+esc(g.inviteCode)+'</strong></small></div><div class="group-card-actions"><button class="primary" data-chat="'+esc(g.id)+'">Chat</button><button class="secondary" data-copy="'+esc(g.id)+'">Copy code</button>'+(g.ownerUid===user?.uid?'<button class="secondary" data-delete="'+esc(g.id)+'">Delete</button>':"")+'</div></article>').join("");empty.style.display=items.length?"none":"block"});
+ document.querySelectorAll("[data-chat]").forEach(b=>b.onclick=()=>openChat(b.dataset.chat));document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copyCode(b.dataset.copy));document.querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>deleteGroup(b.dataset.delete));
 }
-function closeGroupForm(){$("groupDialog").close();editingGroupId=null}
-$("groupForm").addEventListener("submit",e=>{
- e.preventDefault();const name=$("groupName").value.trim();if(!name)return notify("Enter a group name.");
- const type=$("groupForm").dataset.type, memberIds=[...$("groupMemberChoices").querySelectorAll('input[name="groupMember"]:checked')].map(i=>i.value);
- if(editingGroupId){const g=groups.find(x=>String(x.id)===String(editingGroupId));if(!g)return notify("Group could not be found.");g.name=name;g.memberIds=memberIds;g.updatedAt=new Date().toISOString()}
- else groups.push({id:makeId(),name,type,memberIds,messages:[],createdAt:new Date().toISOString()});
- const wasEdit=!!editingGroupId;if(!saveGroups())return;closeGroupForm();renderGroups();notify(wasEdit?"Group updated.":"Group created.");
-});
-function deleteGroup(id){const g=groups.find(x=>String(x.id)===String(id));if(!g||!confirm("Delete this group and its messages from this device?"))return;groups=groups.filter(x=>String(x.id)!==String(id));saveGroups();renderGroups();notify("Group deleted from this device.")}
-function openChat(id){const g=groups.find(x=>String(x.id)===String(id));if(!g)return notify("Group could not be found.");activeChatId=g.id;$("groupChatTitle").textContent=g.name;$("groupChatMeta").textContent=membersFor(g).length+" members · "+(g.type==="family"?"Family group":"Friends group");renderMessages(g);$("groupChatDialog").showModal();$("groupMessageInput").focus()}
-function renderMessages(g){const box=$("groupMessages"), items=g.messages||[];box.innerHTML=items.length?items.map(m=>'<article class="group-message"><p>'+esc(m.text)+'</p><small>'+esc(m.sender||"You")+' · '+esc(new Date(m.createdAt).toLocaleString())+'</small></article>').join(""):'<div class="group-chat-empty"><span>💬</span><b>Start the conversation</b><p>Send the first message to '+esc(g.name)+'.</p></div>';box.scrollTop=box.scrollHeight}
-$("groupMessageForm").addEventListener("submit",e=>{
- e.preventDefault();const text=$("groupMessageInput").value.trim();if(!text||!activeChatId)return;
- const g=groups.find(x=>String(x.id)===String(activeChatId));if(!g)return;g.messages=Array.isArray(g.messages)?g.messages:[];
- const profile=(()=>{try{return JSON.parse(localStorage.getItem("find-my-family-local-profile-v1")||"{}")}catch{return{}}})();
- g.messages.push({id:makeId(),text,sender:profile.name||"You",createdAt:new Date().toISOString()});if(!saveGroups())return;
- $("groupMessageInput").value="";renderMessages(g);renderGroups();
-});
-$("closeGroupDialog").onclick=closeGroupForm;$("cancelGroupDialog").onclick=closeGroupForm;
-$("closeGroupChat").onclick=()=>{$("groupChatDialog").close();activeChatId=null};
-document.querySelectorAll("[data-group-create]").forEach(b=>b.addEventListener("click",()=>openGroupForm(b.dataset.groupCreate)));
-window.addEventListener("storage",e=>{if(e.key===PEOPLE_KEY){syncPeople();renderGroups()}});
-renderGroups();
+async function createGroup(name,type){
+ const ref=doc(collection(db,"groups"));
+ for(let n=0;n<12;n++){const code=codeFor(type),cr=doc(db,"groupCodes",code);try{await runTransaction(db,async tx=>{if((await tx.get(cr)).exists())throw Error("CODE_TAKEN");tx.set(ref,{name,type,ownerUid:user.uid,memberUids:[user.uid],inviteCode:code,lastMessage:"",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});tx.set(cr,{groupId:ref.id,type,ownerUid:user.uid,createdAt:serverTimestamp()});tx.set(doc(db,"groups",ref.id,"members",user.uid),{uid:user.uid,role:"owner",joinedAt:serverTimestamp()})});return code}catch(e){if(e.message!=="CODE_TAKEN")throw e}}
+ throw Error("Could not generate a unique group code.");
+}
+function setup(){
+ document.querySelectorAll("[data-group-create]").forEach(b=>b.addEventListener("click",()=>{if(!ready())return;$("groupDialogTitle").textContent=b.dataset.groupCreate==="family"?"Create Family Group":"Create Friends Group";$("groupName").value="";$("groupForm").dataset.type=b.dataset.groupCreate;$("groupDialog").showModal()}));
+ $("groupForm").addEventListener("submit",async e=>{e.preventDefault();if(!ready())return;const name=$("groupName").value.trim(),type=$("groupForm").dataset.type;if(!name)return toast("Enter a group name.");const b=$("groupForm").querySelector('button[type="submit"]');b.disabled=true;try{const code=await createGroup(name,type);$("groupDialog").close();toast("Group created. Code: "+code+" — tap Copy code to share.")}catch(err){console.error(err);toast("Group create failed. Check Firestore setup/rules: "+(err.message||""))}finally{b.disabled=false;b.textContent="Create Group & Code"}});
+ $("joinGroupBtn").onclick=()=>{if(!ready())return;$("joinGroupCode").value="";$("joinGroupDialog").showModal()};$("closeJoinGroup").onclick=$("cancelJoinGroup").onclick=()=>$("joinGroupDialog").close();
+ $("joinGroupForm").addEventListener("submit",async e=>{e.preventDefault();if(!ready())return;const code=$("joinGroupCode").value.trim().toUpperCase().replace(/\s+/g,"");if(!/^(FAM|FRI)-[A-HJ-NP-Z2-9]{6}$/.test(code))return toast("Invalid code format.");const b=$("joinGroupForm").querySelector('button[type="submit"]');b.disabled=true;try{const cs=await getDoc(doc(db,"groupCodes",code));if(!cs.exists())throw Error("Code not found. Check it and try again.");const info=cs.data(),ref=doc(db,"groups",info.groupId);await runTransaction(db,async tx=>{const s=await tx.get(ref);if(!s.exists())throw Error("Group no longer exists.");const data=s.data();if(!(data.memberUids||[]).includes(user.uid)){tx.set(doc(db,"groups",info.groupId,"members",user.uid),{uid:user.uid,role:"member",joinCode:code,joinedAt:serverTimestamp()});tx.update(ref,{memberUids:[...(data.memberUids||[]),user.uid],updatedAt:serverTimestamp()})}});$("joinGroupDialog").close();toast("Joined "+(info.type==="family"?"Family":"Friends")+" group.")}catch(err){console.error(err);toast(err.message||"Join failed. Check Firestore rules.")}finally{b.disabled=false}});
+}
+async function copyCode(id){const g=groups.find(x=>x.id===id);if(!g)return;try{await navigator.clipboard.writeText(g.inviteCode);toast("Group code copied: "+g.inviteCode)}catch{toast("Share this code: "+g.inviteCode)}}
+async function deleteGroup(id){const g=groups.find(x=>x.id===id);if(!g||g.ownerUid!==user?.uid||!confirm("Delete this group?"))return;try{await runTransaction(db,async tx=>{tx.delete(doc(db,"groups",id));tx.delete(doc(db,"groupCodes",g.inviteCode))});toast("Group deleted.")}catch(e){console.error(e);toast("Delete failed; check rules.")}}
+async function openChat(id){const g=groups.find(x=>x.id===id);if(!g)return;if(messageUnsub)messageUnsub();activeId=id;$("groupChatTitle").textContent=g.name;$("groupChatMeta").textContent=(g.memberUids||[]).length+" members · "+g.inviteCode;$("groupChatDialog").showModal();messageUnsub=onSnapshot(query(collection(db,"groups",id,"messages"),orderBy("createdAt","asc")),s=>{const items=s.docs.map(d=>d.data()),box=$("groupMessages");box.innerHTML=items.map(m=>'<article class="group-message"><p>'+esc(m.text)+'</p><small>'+esc(m.senderName||"Member")+' · '+esc(m.createdAt?.toDate?m.createdAt.toDate().toLocaleString():"just now")+'</small></article>').join("")||'<p class="empty">Start the conversation.</p>';box.scrollTop=box.scrollHeight},e=>{console.error(e);toast("Cannot load messages. Check rules.")})}
+$("groupMessageForm").addEventListener("submit",async e=>{e.preventDefault();const text=$("groupMessageInput").value.trim();if(!text||!activeId||!ready())return;const b=$("groupMessageForm").querySelector('button[type="submit"]');b.disabled=true;try{await addDoc(collection(db,"groups",activeId,"messages"),{text,senderUid:user.uid,senderName:user.displayName||user.email?.split("@")[0]||"Member",createdAt:serverTimestamp()});await updateDoc(doc(db,"groups",activeId),{lastMessage:text.slice(0,180),updatedAt:serverTimestamp()});$("groupMessageInput").value=""}catch(e){console.error(e);toast("Message failed. Check Firestore rules.")}finally{b.disabled=false}});
+$("closeGroupChat").onclick=()=>{if(messageUnsub)messageUnsub();messageUnsub=null;activeId=null;$("groupChatDialog").close()};
+ensureJoinUI();setup();
+if(configured){const app=getApps().length?getApps()[0]:initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);onAuthStateChanged(auth,u=>{user=u;if(groupUnsub)groupUnsub();if(!u){groups=[];render();return}groupUnsub=onSnapshot(query(collection(db,"groups"),where("memberUids","array-contains",u.uid)),s=>{groups=s.docs.map(d=>({id:d.id,...d.data()}));render()},e=>{console.error(e);toast("Cannot load groups. Enable Firestore and deploy firestore.rules.")})})}else console.warn("Firebase config is not set; online group codes are disabled.");
 })();
