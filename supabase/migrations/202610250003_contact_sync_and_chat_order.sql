@@ -26,7 +26,7 @@ set search_path = ''
 as $$
 begin
   update public.conversations
-  set last_message_at = new.created_at
+  set last_message_at = now()
   where id = new.conversation_id;
   return new;
 end;
