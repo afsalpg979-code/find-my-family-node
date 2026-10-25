@@ -337,3 +337,97 @@ $("removePhotoBtn")?.addEventListener("click", () => {
   $("photoPreviewWrap").hidden = true;
   toast("Photo will be removed when you save this person.");
 });
+
+
+// Local profile / login UI. This is intentionally device-only, not server authentication.
+const PROFILE_KEY = "find-my-family-local-profile-v1";
+let localProfile = loadLocalProfile();
+function loadLocalProfile() {
+  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || "null"); } catch { return null; }
+}
+function saveLocalProfile(profile) {
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); return true; }
+  catch { toast("Could not save profile in this browser."); return false; }
+}
+function paintProfile() {
+  const name = localProfile?.name || "Profile";
+  $("profileHeaderName").textContent = name.split(/\s+/)[0];
+  $("profileHeaderAvatar").innerHTML = localProfile?.photo ? `<img src="${localProfile.photo}" alt="">` : escapeHtml(name.trim().slice(0,1).toUpperCase() || "👤");
+  $("profileAvatarLarge").innerHTML = localProfile?.photo ? `<img src="${localProfile.photo}" alt="">` : escapeHtml(name.trim().slice(0,1).toUpperCase() || "👤");
+}
+function enterLocalApp() {
+  document.body.classList.add("profile-ready");
+  $("loginScreen").hidden = true;
+  paintProfile();
+}
+$("localProfileForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = $("profileDisplayName").value.trim();
+  if (!name) return toast("Please enter your name.");
+  localProfile = { ...(localProfile || {}), name, email: $("profileEmail").value.trim(), updatedAt: new Date().toISOString() };
+  if (!saveLocalProfile(localProfile)) return;
+  enterLocalApp();
+  toast("Local profile created on this device.");
+});
+$("profileBtn").addEventListener("click", () => {
+  $("profileNameEdit").value = localProfile?.name || "";
+  $("profileEmailEdit").value = localProfile?.email || "";
+  if (localProfile?.photo) {
+    $("profilePhotoPreview").src = localProfile.photo;
+    $("profilePhotoPreviewWrap").hidden = false;
+  } else {
+    $("profilePhotoPreview").removeAttribute("src");
+    $("profilePhotoPreviewWrap").hidden = true;
+  }
+  $("profilePhotoInput").value = "";
+  $("profilePhotoInput").dataset.remove = "false";
+  $("profileDialog").showModal();
+});
+$("closeProfileBtn").addEventListener("click", () => $("profileDialog").close());
+$("profileForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const name = $("profileNameEdit").value.trim();
+  if (!name) return toast("Please enter your name.");
+  let photo = localProfile?.photo || "";
+  const file = $("profilePhotoInput").files?.[0];
+  if (file) {
+    if (!file.type.startsWith("image/")) return toast("Choose an image file.");
+    if (file.size > 10 * 1024 * 1024) return toast("Choose a photo smaller than 10 MB.");
+    try { photo = await compressProfilePhoto(file); } catch { return toast("Could not read that photo."); }
+  }
+  if ($("profilePhotoInput").dataset.remove === "true") photo = "";
+  localProfile = { name, email: $("profileEmailEdit").value.trim(), photo, updatedAt: new Date().toISOString() };
+  if (!saveLocalProfile(localProfile)) return;
+  paintProfile();
+  $("profileDialog").close();
+  toast("Profile saved on this device.");
+});
+$("profilePhotoInput").addEventListener("change", async () => {
+  const file = $("profilePhotoInput").files?.[0];
+  $("profilePhotoInput").dataset.remove = "false";
+  if (!file) return;
+  if (!file.type.startsWith("image/")) { $("profilePhotoInput").value = ""; return toast("Choose an image file."); }
+  if (file.size > 10 * 1024 * 1024) { $("profilePhotoInput").value = ""; return toast("Choose a photo smaller than 10 MB."); }
+  try {
+    $("profilePhotoPreview").src = await compressProfilePhoto(file);
+    $("profilePhotoPreviewWrap").hidden = false;
+  } catch { toast("Could not preview that photo."); }
+});
+$("removeProfilePhotoBtn").addEventListener("click", () => {
+  $("profilePhotoInput").value = "";
+  $("profilePhotoInput").dataset.remove = "true";
+  $("profilePhotoPreview").removeAttribute("src");
+  $("profilePhotoPreviewWrap").hidden = true;
+});
+$("localSignOutBtn").addEventListener("click", () => {
+  if (!confirm("Reset this device's profile? Your saved family contacts will remain on this device.")) return;
+  localStorage.removeItem(PROFILE_KEY);
+  localProfile = null;
+  $("profileDialog").close();
+  $("profileDisplayName").value = "";
+  $("profileEmail").value = "";
+  document.body.classList.remove("profile-ready");
+  $("loginScreen").hidden = false;
+});
+if (localProfile?.name) enterLocalApp();
+else $("loginScreen").hidden = false;
