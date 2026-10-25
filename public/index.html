@@ -56,6 +56,14 @@
       <label>Full name<input id="personName" required maxlength="80" autocomplete="name" placeholder="e.g. Amina"></label>
       <label>Relationship / label<input id="personRelation" maxlength="60" placeholder="e.g. Mother, Cousin, Best friend"></label>
       <label>Phone number<input id="personPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="e.g. +91 98765 43210"></label>
+      <label class="photo-upload-label">Profile photo
+        <input id="personPhoto" type="file" accept="image/*" capture="user">
+        <span class="photo-hint">Choose a photo or take one with your camera (optional).</span>
+      </label>
+      <div id="photoPreviewWrap" class="photo-preview-wrap" hidden>
+        <img id="photoPreview" alt="Selected profile photo preview">
+        <button type="button" id="removePhotoBtn" class="secondary">Remove photo</button>
+      </div>
       <label>Person type
         <select id="personType">
           <option value="family">Family</option>
