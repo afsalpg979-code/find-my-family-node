@@ -12,10 +12,28 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-glow login-glow-one"></div><div class="login-glow login-glow-two"></div>
+    <div class="login-card">
+      <div class="login-brand-icon"><img src="/icons/family-pin.svg" alt="Find My Family icon"></div>
+      <p class="eyebrow">YOUR CIRCLE, CLOSER</p>
+      <h1>Find My Family</h1>
+      <p class="login-subtitle">Keep your favourite people one tap away.</p>
+      <div class="login-illustration" aria-hidden="true"><span class="orbit orbit-a"></span><span class="orbit orbit-b"></span><span class="login-person">👨‍👩‍👧‍👦</span><span class="login-pin pin-a">📍</span><span class="login-pin pin-b">💚</span></div>
+      <form id="localProfileForm" class="login-form">
+        <label for="profileDisplayName">Your name</label><input id="profileDisplayName" required maxlength="80" autocomplete="name" placeholder="Enter your name">
+        <label for="profileEmail">Email <span class="optional-label">optional</span></label><input id="profileEmail" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com">
+        <button class="login-continue" type="submit">Continue on this device <span aria-hidden="true">→</span></button>
+      </form>
+      <p class="local-mode-note"><span>🔒</span> Local profile setup · no account or password required</p>
+      <p class="login-disclaimer">This is a device-only profile, not a secure online login. Family data is not synced between phones yet.</p>
+    </div>
+  </section>
   <header class="topbar">
     <div class="logo" aria-hidden="true"><img src="/icons/family-pin.svg" alt=""></div>
     <div class="brand-copy"><h1>Find My Family</h1><p>Stay connected. Stay safe.</p></div>
     <button id="installBtn" class="install-btn" hidden>Install app</button>
+    <button id="profileBtn" class="profile-chip" type="button" aria-label="Open profile"><span id="profileHeaderAvatar">👤</span><span id="profileHeaderName">Profile</span></button>
     <button id="shareAppBtn" class="share-btn" type="button">Share app</button>
   </header>
 
@@ -80,6 +98,18 @@
         <button type="button" id="cancelDialog" class="secondary">Cancel</button>
         <button type="submit" class="primary">Save person</button>
       </div>
+    </form>
+  </dialog>
+  <dialog id="profileDialog" class="profile-dialog">
+    <form id="profileForm" method="dialog">
+      <div class="profile-dialog-heading"><div><p class="eyebrow">YOUR ACCOUNT</p><h2>My Profile</h2></div><button type="button" id="closeProfileBtn" class="icon-close" aria-label="Close profile">×</button></div>
+      <div class="profile-avatar-large" id="profileAvatarLarge">👤</div>
+      <label class="photo-upload-label">Profile picture <input id="profilePhotoInput" type="file" accept="image/*" capture="user"><span class="photo-hint">Choose a photo or use your camera.</span></label>
+      <div id="profilePhotoPreviewWrap" class="photo-preview-wrap" hidden><img id="profilePhotoPreview" alt="Profile photo preview"><button type="button" id="removeProfilePhotoBtn" class="secondary">Remove photo</button></div>
+      <label for="profileNameEdit">Display name<input id="profileNameEdit" required maxlength="80" autocomplete="name"></label>
+      <label for="profileEmailEdit">Email <span class="optional-label">optional</span><input id="profileEmailEdit" type="email" maxlength="120" autocomplete="email"></label>
+      <p class="profile-local-note">Profile is saved only in this browser on this device.</p>
+      <div class="dialog-actions"><button type="button" id="localSignOutBtn" class="secondary">Reset profile</button><button type="submit" class="primary">Save profile</button></div>
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
