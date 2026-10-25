@@ -1,122 +1,116 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import {
+  UsersRound,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  MapPin,
+  ShieldCheck,
+} from 'lucide-react';
+import { supabase } from './lib/supabase';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [mode, setMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setMessage('');
+    if (!supabase) {
+      setMessage('Supabase is not configured yet. Add your URL and publishable key to frontend/.env.local, then restart the app.');
+      return;
+    }
+    setBusy(true);
+    try {
+      if (mode === 'signup') {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+        });
+        if (error) throw error;
+        setMessage(data.session
+          ? 'Account created! You can now continue.'
+          : 'Account created. Check your email to confirm your account.');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (error) throw error;
+        setMessage('Signed in successfully!');
+      }
+    } catch (error) {
+      setMessage(error.message || 'Something went wrong. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <main className="auth-page">
+      <div className="auth-glow glow-one" aria-hidden="true" />
+      <div className="auth-glow glow-two" aria-hidden="true" />
+      <section className="auth-card">
+        <div className="brand-mark">
+          <UsersRound size={29} strokeWidth={2.2} />
+          <span className="brand-pin"><MapPin size={14} /></span>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
+        <div className="brand-name">Find My Family</div>
+        <p className="tagline">Your loved ones, closer than ever.</p>
+        <div className="welcome-icon"><ShieldCheck size={24} /></div>
+        <h1>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
+        <p className="subtitle">
+          {mode === 'login'
+            ? 'Sign in to stay connected with your family.'
+            : 'Create an account to get started.'}
+        </p>
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="email">Email address</label>
+          <div className="input-wrap">
+            <Mail size={18} aria-hidden="true" />
+            <input id="email" type="email" placeholder="you@example.com"
+              value={email} onChange={(event) => setEmail(event.target.value)}
+              autoComplete="email" required />
+          </div>
+          <label htmlFor="password">Password</label>
+          <div className="input-wrap">
+            <Lock size={18} aria-hidden="true" />
+            <input id="password" type={showPassword ? 'text' : 'password'}
+              placeholder="At least 6 characters" value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              minLength={6} required />
+            <button className="password-toggle" type="button"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          <button className="submit-button" type="submit" disabled={busy}>
+            {busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
+          </button>
+        </form>
+        {message && <p className="auth-message" role="status">{message}</p>}
+        <p className="switch-mode">
+          {mode === 'login' ? "Don't have an account?" : 'Already registered?'}{' '}
+          <button type="button" onClick={() => {
+            setMode(mode === 'login' ? 'signup' : 'login');
+            setMessage('');
+          }}>
+            {mode === 'login' ? 'Create account' : 'Sign in'}
+          </button>
+        </p>
+        <div className="privacy-note">
+          <ShieldCheck size={15} />
+          <span>Your account helps keep your family space private.</span>
         </div>
       </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    </main>
+  );
 }
-
-export default App
