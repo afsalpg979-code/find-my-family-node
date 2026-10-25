@@ -39,3 +39,16 @@ To show an interactive embedded map, enable the Google Maps JavaScript API and c
 - Use the Profile control in the app header to update the display name, optional email, and profile photo, or reset the local profile.
 - Profile details and profile photos are stored in this browser's local storage only.
 - **Security limitation:** this is a local profile/onboarding UI, not real authentication. There is no server-side account, password verification, account recovery, or cross-device profile sync. Do not use it to protect sensitive information. Real login and family sharing need a backend authentication provider and a database.
+
+
+## Firebase email/password and Google authentication
+
+This repository now includes a Firebase Authentication sign-in UI. To activate it:
+
+1. In Firebase Console, open **Authentication → Sign-in method** and enable **Email/Password** and **Google**.
+2. In **Project settings → General → Your apps**, register/select a Web app and copy its Firebase web configuration.
+3. Edit `public/firebase-config.js` and replace every `REPLACE_WITH_...` value with the matching Firebase web config value. These web config values are intended for client apps; never put a service-account private key or Admin SDK secret in this file.
+4. In **Authentication → Settings → Authorized domains**, add the exact domain hosting this app. For local testing, use `localhost`; a temporary trycloudflare domain changes and is not a reliable production domain.
+5. Run `npm start` and open the app using localhost or the deployed HTTPS URL. Email account creation, email sign-in, password-reset email, Google popup sign-in and sign-out are handled by Firebase Auth.
+
+Firebase Authentication does **not** itself sync contacts, profile photos or GPS. Those remain browser-local until a database and authenticated per-user/family access rules are implemented. Do not share sensitive family data until those rules are in place. Google popup sign-in may be blocked by some embedded browsers; open the hosted app in Chrome if needed.
