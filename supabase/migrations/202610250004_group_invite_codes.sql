@@ -80,3 +80,47 @@ revoke all on function public.fmf_create_group_invite(uuid) from public;
 revoke all on function public.fmf_join_group_by_code(text) from public;
 grant execute on function public.fmf_create_group_invite(uuid) to authenticated;
 grant execute on function public.fmf_join_group_by_code(text) to authenticated;
+
+-- A group may contain the creator plus one invited member (two people total).
+create or replace function public.fmf_create_conversation(
+  p_title text,
+  p_is_group boolean,
+  p_member_ids uuid[]
+) returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  actor uuid := auth.uid();
+  new_conversation_id uuid;
+  requested_ids uuid[];
+  member_count integer;
+begin
+  if actor is null then raise exception 'Sign in is required'; end if;
+  select array_agg(distinct ids.user_id) into requested_ids
+  from unnest(coalesce(p_member_ids, array[]::uuid[])) as ids(user_id)
+  where ids.user_id is not null and ids.user_id <> actor;
+  requested_ids := coalesce(requested_ids, array[]::uuid[]);
+  member_count := coalesce(array_length(requested_ids, 1), 0);
+  if p_is_group and member_count < 1 then raise exception 'A group chat needs at least one other member'; end if;
+  if not p_is_group and member_count <> 1 then raise exception 'A direct chat needs exactly one other member'; end if;
+  if exists (
+    select 1 from unnest(requested_ids) requested(user_id)
+    where not exists (select 1 from public.profiles p where p.user_id = requested.user_id)
+  ) then raise exception 'One or more selected members are not registered'; end if;
+
+  insert into public.conversations(title, is_group, created_by)
+  values (
+    case when p_is_group then coalesce(nullif(trim(p_title), ''), 'New group') else null end,
+    p_is_group,
+    actor
+  ) returning id into new_conversation_id;
+
+  insert into public.conversation_members(conversation_id, user_id, role)
+  values (new_conversation_id, actor, 'admin');
+  insert into public.conversation_members(conversation_id, user_id, role)
+  select new_conversation_id, member_id, 'member' from unnest(requested_ids) member_id;
+  return new_conversation_id;
+end;
+$$;
+revoke all on function public.fmf_create_conversation(text, boolean, uuid[]) from public;
+grant execute on function public.fmf_create_conversation(text, boolean, uuid[]) to authenticated;
