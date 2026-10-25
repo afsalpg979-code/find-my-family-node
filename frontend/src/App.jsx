@@ -6,6 +6,7 @@ import {
   AlertCircle, Menu, LocateFixed
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
+import { LiveLocationShare, SharedLocationPage } from './LiveLocationShare';
 import './App.css';
 
 const CONTACTS_KEY = 'fmf-contacts-v1';
@@ -163,6 +164,9 @@ export default function App() {
     return matchesPage && [person.name, person.relation, person.phone, person.location].some(value => String(value || '').toLowerCase().includes(query));
   }), [contacts, page, search]);
 
+  const incomingShareToken = new URLSearchParams(window.location.search).get('share');
+  if (incomingShareToken) return <SharedLocationPage token={incomingShareToken} />;
+
   if (!authReady) return <main className="loading-page"><div className="loading-orbit" /><p>Preparing your family space…</p></main>;
 
   if (!user) return (
@@ -209,6 +213,8 @@ export default function App() {
           <div className="page-heading"><div><div className="eyebrow">YOUR PRIVATE CIRCLE</div><h1>{page === 'home' ? `Hello, ${greeting} 👋` : title}</h1><p>{page === 'home' ? 'Keep the people who matter most within reach.' : page === 'profile' ? 'Your account and session details.' : `Keep your ${page} contacts organised in one place.`}</p></div>{page !== 'profile' && <button className="primary-button" onClick={() => openAdd(page === 'friends' ? 'friends' : 'family')}><Plus size={18} />Add person</button>}</div>
 
           {notice && <div className="notice-banner" role="status"><CheckCircle2 size={17} /><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Dismiss message"><X size={16} /></button></div>}
+
+          {page === 'home' && <LiveLocationShare user={user} />}
 
           {page === 'home' && <>
             <section className="hero-panel"><div className="hero-copy"><span className="hero-chip"><MapPin size={13} /> STAY CONNECTED</span><h2>Love has no distance.</h2><p>Build your circle, keep contact details handy, and open map directions when you need them.</p><button className="hero-button" onClick={() => openAdd('family')}><UserRoundPlus size={17} />Add your first person</button></div><div className="hero-art" aria-hidden="true"><div className="orbit orbit-a" /><div className="orbit orbit-b" /><div className="hero-pin"><MapPin size={34} /></div><div className="float-avatar avatar-a"><UsersRound size={20} /></div><div className="float-avatar avatar-b"><Heart size={19} /></div><div className="float-avatar avatar-c"><MapPin size={18} /></div></div></section>
