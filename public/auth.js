@@ -14,7 +14,8 @@ const passwordInput = $("authPassword");
 const message = $("authMessage");
 const signInBtn = $("emailSignInBtn");
 const signUpBtn = $("emailSignUpBtn");
-const nameInput = $("authName");\nconst nameLabel = $("authNameLabel");
+const nameInput = $("authName");
+const nameLabel = $("authNameLabel");
 const resetBtn = $("resetPasswordBtn");
 let mode = "signin";
 let auth;
@@ -34,8 +35,6 @@ function friendlyError(error) {
     "auth/invalid-credential": "Email or password is incorrect.",
     "auth/user-not-found": "No account was found for this email. Create an account first.",
     "auth/wrong-password": "Email or password is incorrect.",
-    "auth/popup-closed-by-user": "Google sign-in was closed before finishing.",
-    "auth/popup-blocked": "Your browser blocked the Google sign-in window. Allow popups or open this site in Chrome.",
     "auth/unauthorized-domain": "This website domain is not authorized in Firebase Authentication settings.",
     "auth/network-request-failed": "Network error. Check your internet connection and try again.",
     "auth/too-many-requests": "Too many attempts. Wait a little and try again."
@@ -80,8 +79,12 @@ function setMode(nextMode) {
 }
 
 if (!validateConfig()) {
-  showLogin();
-  showMessage("Connect Firebase first: edit public/firebase-config.js and paste your Web app configuration from Firebase Console.");
+  // Keep the local app usable before Firebase is configured. Contacts and groups remain on this device only.
+  loginScreen.hidden = true;
+  document.body.classList.add("profile-ready");
+  if ($("profileHeaderName")) $("profileHeaderName").textContent = "Local mode";
+  if ($("profileHeaderAvatar")) $("profileHeaderAvatar").textContent = "👤";
+  console.warn("Firebase is not configured. Running Find My Family in local-only mode.");
 } else {
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app);
