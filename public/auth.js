@@ -14,7 +14,7 @@ const passwordInput = $("authPassword");
 const message = $("authMessage");
 const signInBtn = $("emailSignInBtn");
 const signUpBtn = $("emailSignUpBtn");
-const googleBtn = $("googleSignInBtn");
+const nameInput = $("authName");\nconst nameLabel = $("authNameLabel");
 const resetBtn = $("resetPasswordBtn");
 let mode = "signin";
 let auth;
@@ -43,7 +43,7 @@ function friendlyError(error) {
   return codes[error?.code] || error?.message || "Authentication failed. Please try again.";
 }
 function setBusy(busy, label) {
-  [signInBtn, signUpBtn, googleBtn, resetBtn].forEach(button => { if (button) button.disabled = busy; });
+  [signInBtn, signUpBtn, resetBtn].forEach(button => { if (button) button.disabled = busy; });
   if (label) signInBtn.textContent = label;
   else signInBtn.textContent = mode === "signup" ? "Create account" : "Sign in with email →";
 }
@@ -110,15 +110,6 @@ if (!validateConfig()) {
   });
   signUpBtn.addEventListener("click", () => setMode(mode === "signup" ? "signin" : "signup"));
   signUpBtn.addEventListener("click", () => { signUpBtn.textContent = mode === "signup" ? "Already have an account? Sign in" : "Create account with email"; });
-  googleBtn.addEventListener("click", async () => {
-    setBusy(true, "Connecting…");
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      await signInWithPopup(auth, provider);
-    } catch (error) { showMessage(friendlyError(error)); }
-    finally { setBusy(false); }
-  });
   resetBtn.addEventListener("click", async () => {
     const email = emailInput.value.trim();
     if (!email) { emailInput.focus(); return showMessage("Enter your email above, then tap Forgot password again."); }
