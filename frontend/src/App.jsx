@@ -120,15 +120,15 @@ export default function App() {
     if (!user?.id || contactsLoadedFor !== user.id) return;
     try { localStorage.setItem(`${CONTACTS_KEY}:${user.id}`, JSON.stringify(contacts)); } catch { /* storage may be unavailable */ }
     if (!supabase) return;
-    const sync = async () => {
+    const timer = window.setTimeout(async () => {
       const { error } = await supabase.from('contact_books').upsert({
         user_id: user.id,
         contacts,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
       if (error) setNotice('Contacts are saved on this device, but cloud sync failed. Check that migration 003 has been run.');
-    };
-    sync();
+    }, 400);
+    return () => window.clearTimeout(timer);
   }, [contacts, contactsLoadedFor, user?.id]);
 
   async function handleSubmit(event) {
