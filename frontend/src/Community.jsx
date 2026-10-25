@@ -18,6 +18,8 @@ export default function Community({ mode, user }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [followingOnly, setFollowingOnly] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
 
   const loadCommunity = useCallback(async () => {
     if (!supabase || !user?.id) return;
@@ -137,6 +139,46 @@ export default function Community({ mode, user }) {
     setBusy(false);
   }
 
+  async function createGroupInvite() {
+    if (!supabase || !selectedChat?.id || !selectedChat.is_group || busy) return;
+    setBusy(true); setNotice('');
+    const { data, error } = await supabase.rpc('fmf_create_group_invite', { p_conversation_id: selectedChat.id });
+    if (error) {
+      setNotice('Could not create an invite. Run migration 004 for group invitation codes.');
+    } else {
+      const code = data?.[0]?.invite_code;
+      const expiry = data?.[0]?.expires_at;
+      if (!code) setNotice('The invite was created but no code was returned. Please refresh and try again.');
+      else {
+        try {
+          await navigator.clipboard.writeText(code);
+          setNotice('Invite code ' + code + ' copied. It expires ' + (expiry ? new Date(expiry).toLocaleString() : 'in 7 days') + '.');
+        } catch {
+          setNotice('Share this invite code: ' + code + '. It expires ' + (expiry ? new Date(expiry).toLocaleString() : 'in 7 days') + '.');
+        }
+      }
+    }
+    setBusy(false);
+  }
+
+  async function joinGroup(event) {
+    event.preventDefault();
+    const code = joinCode.trim().toUpperCase();
+    if (!code || !supabase || busy) return;
+    setBusy(true); setNotice('');
+    const { data, error } = await supabase.rpc('fmf_join_group_by_code', { p_invite_code: code });
+    if (error) {
+      setNotice(error.message || 'Could not join group. Check the code and migration 004.');
+    } else {
+      setJoinOpen(false);
+      setJoinCode('');
+      await loadCommunity();
+      setSelectedChat({ id: data, is_group: true, displayTitle: 'Group chat', title: 'Group chat' });
+      setNotice('You joined the group. Open it to see messages.');
+    }
+    setBusy(false);
+  }
+
   async function sendMessage(event) {
     event.preventDefault();
     const body = draft.trim();
@@ -156,7 +198,7 @@ export default function Community({ mode, user }) {
         <h2>{mode === 'chats' ? 'Chats' : 'Find people'}</h2>
         <p>{mode === 'chats' ? 'Private direct messages and group conversations with registered accounts.' : 'Follow registered members, unfollow anytime, or start a direct conversation.'}</p>
       </div>
-      {mode === 'chats' && <div className="chat-create-actions"><button className="outline-button" onClick={() => setDirectOpen(true)}><MessageCircle size={16} />New chat</button><button className="primary-button" onClick={() => setGroupOpen(true)}><Plus size={17} />Create group</button></div>}
+      {mode === 'chats' && <div className="chat-create-actions"><button className="outline-button" onClick={() => setDirectOpen(true)}><MessageCircle size={16} />New chat</button><button className="outline-button" onClick={() => setJoinOpen(true)}>Join with code</button><button className="primary-button" onClick={() => setGroupOpen(true)}><Plus size={17} />Create group</button></div>}
     </div>
 
     {notice && <div className="community-notice" role="status"><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Dismiss"><X size={15} /></button></div>}
@@ -179,11 +221,11 @@ export default function Community({ mode, user }) {
         <div className="chat-list">{conversations.filter(chat => chat.displayTitle.toLowerCase().includes(query.toLowerCase())).map(chat => <button key={chat.id} className={selectedChat?.id === chat.id ? 'chat-list-item selected' : 'chat-list-item'} onClick={() => setSelectedChat(chat)}><span className={chat.is_group ? 'chat-avatar group-chat-avatar' : 'chat-avatar'}>{chat.is_group ? <UsersRound size={18} /> : chat.displayTitle.charAt(0).toUpperCase()}</span><span className="chat-list-copy"><strong>{chat.displayTitle}</strong><small>{chat.preview}</small></span><span className="chat-kind">{chat.is_group ? 'GROUP' : 'DIRECT'}</span></button>)}
           {!conversations.length && <div className="chat-list-empty"><MessageCircle size={24} /><p>No chats yet.</p><span>Use Friends to message a member, or create a group.</span></div>}
         </div>
-        <button className="new-chat-link" onClick={() => setDirectOpen(true)}><MessageCircle size={16} />Start a direct chat</button><button className="new-chat-link secondary-new-chat" onClick={() => setGroupOpen(true)}><Plus size={16} />Create a group chat</button>
+        <button className="new-chat-link" onClick={() => setDirectOpen(true)}><MessageCircle size={16} />Start a direct chat</button><button className="new-chat-link secondary-new-chat" onClick={() => setJoinOpen(true)}>Join a group with code</button><button className="new-chat-link secondary-new-chat" onClick={() => setGroupOpen(true)}><Plus size={16} />Create a group chat</button>
       </aside>
       <section className={selectedChat ? 'chat-window chat-window-visible-mobile' : 'chat-window'}>
         {selectedChat ? <>
-          <header className="chat-window-header"><button className="icon-button chat-back" onClick={() => setSelectedChat(null)} aria-label="Back to chats"><ArrowLeft size={18} /></button><span className={selectedChat.is_group ? 'chat-avatar group-chat-avatar' : 'chat-avatar'}>{selectedChat.is_group ? <UsersRound size={18} /> : selectedChat.displayTitle.charAt(0).toUpperCase()}</span><div><h3>{selectedChat.displayTitle}</h3><p>{selectedChat.is_group ? 'Group conversation' : 'Direct conversation'}</p></div></header>
+          <header className="chat-window-header"><button className="icon-button chat-back" onClick={() => setSelectedChat(null)} aria-label="Back to chats"><ArrowLeft size={18} /></button><span className={selectedChat.is_group ? 'chat-avatar group-chat-avatar' : 'chat-avatar'}>{selectedChat.is_group ? <UsersRound size={18} /> : selectedChat.displayTitle.charAt(0).toUpperCase()}</span><div className="chat-header-copy"><h3>{selectedChat.displayTitle}</h3><p>{selectedChat.is_group ? 'Group conversation' : 'Direct conversation'}</p></div>{selectedChat.is_group && <button className="outline-button" disabled={busy} onClick={createGroupInvite}>Invite code</button>}</header>
           <div className="message-stream">{messages.length ? messages.map(message => <div key={message.id} className={message.sender_id === user.id ? 'message-row own-message' : 'message-row'}><div className="message-bubble">{selectedChat.is_group && message.sender_id !== user.id && <strong className="message-sender">{profiles.find(profile => profile.user_id === message.sender_id)?.display_name || 'Member'}</strong>}<p>{message.body}</p><time>{new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time></div></div>) : <div className="chat-welcome"><MessageCircle size={27} /><h3>Say hello 👋</h3><p>Your conversation is ready. Send a message to begin.</p></div>}</div>
           <form className="message-composer" onSubmit={sendMessage}><input value={draft} onChange={event => setDraft(event.target.value)} placeholder="Write a message…" aria-label="Message text" maxLength={4000} /><button type="submit" className="primary-button" disabled={!draft.trim() || busy}><Send size={17} />Send</button></form>
         </> : <div className="chat-welcome"><MessageCircle size={34} /><h3>Your conversations</h3><p>Choose a chat from the list, message someone from Friends, or create a group with registered members.</p><button className="primary-button" onClick={() => setGroupOpen(true)}><Plus size={17} />Create group chat</button></div>}
@@ -193,6 +235,7 @@ export default function Community({ mode, user }) {
     {directOpen && <div className="modal-backdrop community-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setDirectOpen(false); }}><section className="person-modal community-modal" role="dialog" aria-modal="true" aria-labelledby="direct-modal-title"><div className="modal-heading"><div><div className="eyebrow">YOUR COMMUNITY</div><h2 id="direct-modal-title">Start a direct chat</h2><p>Choose a registered Find My Family member.</p></div><button className="icon-button close-modal" onClick={() => setDirectOpen(false)} aria-label="Close"><X size={19} /></button></div><div className="direct-member-list">{profiles.map(profile => <div key={profile.user_id} className="direct-member-option"><span className="member-avatar small-member-avatar">{(profile.display_name || 'M').charAt(0).toUpperCase()}</span><span>{profile.display_name || 'Member'}</span><button className="outline-button" disabled={busy} onClick={() => startDirect(profile)}><MessageCircle size={15} />Message</button></div>)}{!profiles.length && <p className="community-empty">No other registered accounts found yet.</p>}</div></section></div>}
 
     {groupOpen && <div className="modal-backdrop community-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setGroupOpen(false); }}><section className="person-modal community-modal" role="dialog" aria-modal="true" aria-labelledby="group-modal-title"><div className="modal-heading"><div><div className="eyebrow">YOUR COMMUNITY</div><h2 id="group-modal-title">Create a group chat</h2><p>Choose at least two other registered members.</p></div><button className="icon-button close-modal" onClick={() => setGroupOpen(false)} aria-label="Close"><X size={19} /></button></div><form onSubmit={createGroup}><div className="form-field"><label htmlFor="group-name">Group name *</label><input id="group-name" value={groupName} onChange={event => setGroupName(event.target.value)} placeholder="e.g. Family group" required maxLength={80} /></div><div className="group-member-picker"><label>Choose members ({selectedMembers.length} selected)</label>{profiles.map(profile => <label key={profile.user_id} className="group-member-option"><input type="checkbox" checked={selectedMembers.includes(profile.user_id)} onChange={event => setSelectedMembers(current => event.target.checked ? [...current, profile.user_id] : current.filter(id => id !== profile.user_id))} /><span className="member-avatar small-member-avatar">{(profile.display_name || 'M').charAt(0).toUpperCase()}</span><span>{profile.display_name || 'Member'}</span></label>)}{!profiles.length && <p>No other registered members are available yet.</p>}</div><div className="modal-actions"><button type="button" className="cancel-button" onClick={() => setGroupOpen(false)}>Cancel</button><button type="submit" className="primary-button" disabled={busy || selectedMembers.length < 2}><UsersRound size={17} />Create group</button></div></form></section></div>}
+    {joinOpen && <div className="modal-backdrop community-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setJoinOpen(false); }}><section className="person-modal community-modal" role="dialog" aria-modal="true" aria-labelledby="join-group-title"><div className="modal-heading"><div><div className="eyebrow">YOUR COMMUNITY</div><h2 id="join-group-title">Join a group</h2><p>Enter an active invitation code shared by a group member.</p></div><button className="icon-button close-modal" onClick={() => setJoinOpen(false)} aria-label="Close"><X size={19} /></button></div><form onSubmit={joinGroup}><div className="form-field"><label htmlFor="group-invite-code">Invitation code *</label><input id="group-invite-code" value={joinCode} onChange={event => setJoinCode(event.target.value.toUpperCase())} placeholder="FMF-ABC123456" maxLength={14} autoCapitalize="characters" required /></div><p className="community-privacy">Codes expire after seven days. Only share them with people you trust.</p><div className="modal-actions"><button type="button" className="cancel-button" onClick={() => setJoinOpen(false)}>Cancel</button><button type="submit" className="primary-button" disabled={busy || !joinCode.trim()}>{busy ? 'Joining…' : 'Join group'}</button></div></form></section></div>}
     <p className="community-privacy"><ShieldCheck size={14} /> Chats are visible only to their members. Registered members can follow or unfollow each other.</p>
   </section>;
 }
