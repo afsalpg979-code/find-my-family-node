@@ -3,10 +3,11 @@ import {
   UsersRound, Mail, Lock, Eye, EyeOff, MapPin, ShieldCheck, Home,
   Users, UserRoundPlus, UserRound, Phone, Navigation, Search, LogOut,
   Plus, X, Pencil, Trash2, MapPinned, Compass, Heart, CheckCircle2,
-  AlertCircle, Menu, LocateFixed
+  AlertCircle, Menu, LocateFixed, MessageCircle
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { LiveLocationShare, SharedLocationPage } from './LiveLocationShare';
+import Community from './Community';
 import './App.css';
 
 const CONTACTS_KEY = 'fmf-contacts-v1';
@@ -191,7 +192,7 @@ export default function App() {
     </main>
   );
 
-  const title = page === 'home' ? 'Your family, closer' : page === 'family' ? 'My Family' : page === 'friends' ? 'My Friends' : 'Your profile';
+  const title = page === 'home' ? 'Your family, closer' : page === 'family' ? 'My Family' : page === 'friends' ? 'My Friends' : page === 'chats' ? 'Your Chats' : 'Your profile';
   const greeting = user.email?.split('@')[0] || 'there';
 
   return (
@@ -203,6 +204,7 @@ export default function App() {
           <button className={page === 'home' ? 'nav-item active' : 'nav-item'} onClick={() => { setPage('home'); setSearch(''); }}><Home size={18} />Home</button>
           <button className={page === 'family' ? 'nav-item active' : 'nav-item'} onClick={() => { setPage('family'); setSearch(''); }}><Users size={18} />Family <span className="nav-count">{contacts.filter(p => p.type === 'family').length}</span></button>
           <button className={page === 'friends' ? 'nav-item active' : 'nav-item'} onClick={() => { setPage('friends'); setSearch(''); }}><Heart size={18} />Friends <span className="nav-count">{contacts.filter(p => p.type === 'friends').length}</span></button>
+          <button className={page === 'chats' ? 'nav-item active' : 'nav-item'} onClick={() => { setPage('chats'); setSearch(''); }}><MessageCircle size={18} />Chats</button>
         </nav>
         <div className="sidebar-bottom"><div className="sidebar-secure"><ShieldCheck size={17} /><div><strong>Your space</strong><span>Private by design</span></div></div><button className="nav-item" onClick={handleSignOut}><LogOut size={18} />Sign out</button></div>
       </aside>
@@ -210,11 +212,12 @@ export default function App() {
       <section className="main-area">
         <header className="topbar"><div className="mobile-brand"><Brand small /></div><div className="topbar-right"><span className="online-dot" />Signed in <button className="avatar-button" title={user.email || 'Profile'} onClick={() => setPage('profile')}>{greeting.charAt(0).toUpperCase()}</button></div></header>
         <div className="page-content">
-          <div className="page-heading"><div><div className="eyebrow">YOUR PRIVATE CIRCLE</div><h1>{page === 'home' ? `Hello, ${greeting} 👋` : title}</h1><p>{page === 'home' ? 'Keep the people who matter most within reach.' : page === 'profile' ? 'Your account and session details.' : `Keep your ${page} contacts organised in one place.`}</p></div>{page !== 'profile' && <button className="primary-button" onClick={() => openAdd(page === 'friends' ? 'friends' : 'family')}><Plus size={18} />Add person</button>}</div>
+          <div className="page-heading"><div><div className="eyebrow">YOUR PRIVATE CIRCLE</div><h1>{page === 'home' ? `Hello, ${greeting} 👋` : title}</h1><p>{page === 'home' ? 'Keep the people who matter most within reach.' : page === 'profile' ? 'Your account and session details.' : page === 'chats' ? 'Individual messages and group conversations with registered members.' : `Keep your ${page} contacts organised in one place.`}</p></div>{page !== 'profile' && page !== 'chats' && <button className="primary-button" onClick={() => openAdd(page === 'friends' ? 'friends' : 'family')}><Plus size={18} />Add person</button>}</div>
 
           {notice && <div className="notice-banner" role="status"><CheckCircle2 size={17} /><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Dismiss message"><X size={16} /></button></div>}
 
           {page === 'home' && <LiveLocationShare user={user} />}
+          {(page === 'friends' || page === 'chats') && <Community mode={page} user={user} />}
 
           {page === 'home' && <>
             <section className="hero-panel"><div className="hero-copy"><span className="hero-chip"><MapPin size={13} /> STAY CONNECTED</span><h2>Love has no distance.</h2><p>Build your circle, keep contact details handy, and open map directions when you need them.</p><button className="hero-button" onClick={() => openAdd('family')}><UserRoundPlus size={17} />Add your first person</button></div><div className="hero-art" aria-hidden="true"><div className="orbit orbit-a" /><div className="orbit orbit-b" /><div className="hero-pin"><MapPin size={34} /></div><div className="float-avatar avatar-a"><UsersRound size={20} /></div><div className="float-avatar avatar-b"><Heart size={19} /></div><div className="float-avatar avatar-c"><MapPin size={18} /></div></div></section>
@@ -224,7 +227,7 @@ export default function App() {
 
           {page === 'profile' && <section className="profile-card"><div className="profile-avatar">{greeting.charAt(0).toUpperCase()}</div><h2>{greeting}</h2><p>{user.email}</p><div className="profile-detail"><ShieldCheck size={18} /><div><strong>Authenticated account</strong><span>Signed in with email and password</span></div><CheckCircle2 size={18} /></div><button className="signout-button" onClick={handleSignOut}><LogOut size={17} />Sign out</button><p className="profile-note">Contact details currently save only in this browser on this device. Cloud sync and family sharing still need to be connected.</p></section>}
 
-          {page !== 'profile' && <div className="contacts-section"><div className="contacts-toolbar"><div className="section-heading compact"><div><h2>{page === 'home' ? 'People' : page === 'family' ? 'Family members' : 'Friends'}</h2><p>{filteredContacts.length} {filteredContacts.length === 1 ? 'person' : 'people'} in this list</p></div></div><div className="search-box"><Search size={17} /><input aria-label="Search contacts" placeholder="Search people…" value={search} onChange={event => setSearch(event.target.value)} /><kbd>/</kbd></div></div>
+          {page !== 'profile' && page !== 'chats' && <div className="contacts-section"><div className="contacts-toolbar"><div className="section-heading compact"><div><h2>{page === 'home' ? 'People' : page === 'family' ? 'Family members' : 'Friends'}</h2><p>{filteredContacts.length} {filteredContacts.length === 1 ? 'person' : 'people'} in this list</p></div></div><div className="search-box"><Search size={17} /><input aria-label="Search contacts" placeholder="Search people…" value={search} onChange={event => setSearch(event.target.value)} /><kbd>/</kbd></div></div>
             {filteredContacts.length ? <div className="people-grid">{filteredContacts.map(person => <article className="person-card" key={person.id}><div className={`person-avatar ${person.type === 'friends' ? 'friend-avatar' : ''}`}>{(person.name || '?').charAt(0).toUpperCase()}</div><div className="person-info"><h3>{person.name}</h3><p>{person.relation || (person.type === 'friends' ? 'Friend' : 'Family member')}</p>{person.location && <span className="person-location"><MapPin size={13} />{person.location}</span>}</div><button className="icon-button edit-contact" aria-label={`Edit ${person.name}`} onClick={() => openEdit(person)}><Pencil size={15} /></button><div className="person-actions">{person.phone && <a className="contact-action call-action" href={`tel:${person.phone.replace(/[^+\d]/g, '')}`}><Phone size={15} />Call now</a>}{person.lat && person.lng ? <a className="contact-action map-action" href={`https://www.google.com/maps?q=${person.lat},${person.lng}`} target="_blank" rel="noreferrer"><Navigation size={15} />Go now</a> : person.location ? <a className="contact-action map-action" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(person.location)}`} target="_blank" rel="noreferrer"><Navigation size={15} />Go now</a> : <button className="contact-action map-action" onClick={() => { setForm({ ...person }); setEditing(person.id); setShowForm(true); setNotice('Add a location or capture GPS coordinates to enable Go now.'); }}><MapPin size={15} />Add location</button>}</div></article>)}</div> : <div className="empty-state"><div className="empty-icon"><UsersRound size={25} /></div><h3>{search ? 'No matching people' : page === 'home' ? 'Your circle starts here' : `No ${page === 'friends' ? 'friends' : 'family members'} yet`}</h3><p>{search ? 'Try another name or clear your search.' : 'Add someone important to keep their contact details close.'}</p>{!search && <button className="primary-button" onClick={() => openAdd(page === 'friends' ? 'friends' : 'family')}><Plus size={17} />Add person</button>}</div>}
           </div>}
           <footer className="app-footer"><ShieldCheck size={14} /> Your family space · Keep your loved ones close <span>•</span> <span>Live sharing requires one-time Supabase setup</span></footer>
