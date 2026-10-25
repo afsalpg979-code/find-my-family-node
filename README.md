@@ -57,3 +57,25 @@ Firebase Authentication does **not** itself sync contacts, profile photos or GPS
 ## Online group codes
 
 See [GROUP-CODES-SETUP.md](GROUP-CODES-SETUP.md) for Firebase Firestore setup, rule deployment, and cross-device testing. Group membership and messages sync online; personal contacts and saved GPS coordinates remain local to each phone.
+
+
+## Location upload, map selection, and live sharing
+
+The React frontend now includes these location controls:
+
+- **Upload current GPS location** captures the device's current coordinates and stores them with the selected contact in that browser.
+- **Choose a place in Google Maps** opens Google Maps search. Enter the place/address and its latitude and longitude in the contact form, then save. A Google Maps API key is not needed to open map links.
+- **Go now / Preview on Google Maps** opens the saved coordinates in Google Maps.
+- **Live location sharing** starts browser GPS updates and creates a private link that can be sent to a chosen recipient using the phone's share sheet. The link expires after one hour and can be stopped early. The recipient's page refreshes the location every five seconds.
+
+### Required one-time Supabase database setup
+
+1. Open the Supabase project connected in `frontend/.env.local`.
+2. Open **SQL Editor** in the Supabase dashboard.
+3. Copy and run the complete SQL from [supabase/migrations/202610250001_location_sharing.sql](supabase/migrations/202610250001_location_sharing.sql).
+4. Make sure the frontend uses the project's Supabase URL and publishable key. Never put a service-role/secret key in the frontend.
+5. Test on an HTTPS deployment (or localhost for testing) and grant precise location permission when prompted.
+
+The migration adds a `location_shares` table protected by row-level security. Authenticated users can manage only their own share rows. A narrowly scoped database function returns only the active location matching the secret share token. Anyone holding that link can view that location until the one-hour expiry or until the owner stops sharing, so send it only to people you trust.
+
+**Important boundaries:** contact cards and their saved coordinates still use browser local storage; this update does not migrate existing contacts into a shared cloud contacts database. Live sharing tracks the signed-in phone/browser that starts sharing—it does not secretly locate another family member. The browser must remain open with location permission enabled for continuous updates. A local `127.0.0.1` or development-server URL is not usable by relatives on other devices; deploy the frontend to a public HTTPS host before sending share links.
