@@ -59,7 +59,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [page, setPage] = useState('home');
-  const [contacts, setContacts] = useState([]);\n  const [contactsLoadedFor, setContactsLoadedFor] = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [contactsLoadedFor, setContactsLoadedFor] = useState(null);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
