@@ -85,3 +85,14 @@ body:not(.profile-ready)>.topbar,body:not(.profile-ready)>main{display:none}
 .optional-label{color:#91a8b8;font-weight:500}
 .profile-local-note{padding:10px 12px;border:1px solid #ffffff18;border-radius:11px;background:#ffffff08;color:#b8cbd9;font-size:11px;line-height:1.5}
 @media(max-width:480px){.login-card{padding:24px 19px 20px;border-radius:24px}.login-card h1{font-size:26px}.profile-chip{padding:5px 6px;gap:4px}.profile-chip>span:last-child{max-width:46px}.topbar{flex-wrap:wrap}.brand-copy{flex:1 1 100px}}
+
+
+/* Explicit take-photo and upload-from-gallery actions */
+.photo-upload-label{display:grid;gap:8px;margin:12px 0}
+.photo-field-title{font-size:13px;font-weight:750;color:inherit}
+.photo-file-input{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important}
+.photo-choice-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.photo-choice{min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px}
+.photo-upload-label .photo-hint{line-height:1.45}
+.profile-dialog .photo-choice{background:#1c4054;color:#effaf7;border:1px solid #ffffff20}
+.photo-choice:focus-visible{outline:3px solid #57dcb0;outline-offset:2px}
