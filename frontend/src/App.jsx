@@ -12,19 +12,29 @@ import './App.css';
 
 const CONTACTS_KEY = 'fmf-contacts-v1';
 
-function readContacts() {
+function normalizeContacts(records) {
+  if (!Array.isArray(records)) return [];
+  return records.map(person => ({
+    ...person,
+    id: String(person.id ?? Date.now() + Math.random()),
+    type: person.type === 'friend' || person.type === 'friends' ? 'friends' : 'family',
+    location: person.location || (person.lat != null && person.lng != null ? 'Saved GPS location' : '')
+  }));
+}
+
+function readLocalContacts(userId) {
   try {
-    // Migrate records from the previous Find My Family version when it shares this browser origin.
-    const saved = localStorage.getItem(CONTACTS_KEY);
-    const legacy = saved ? null : localStorage.getItem('find-my-family-people-v1');
-    const records = saved ? JSON.parse(saved) : legacy ? JSON.parse(legacy) : [];
-    if (!Array.isArray(records)) return [];
-    return records.map(person => ({
-      ...person,
-      id: String(person.id ?? Date.now() + Math.random()),
-      type: person.type === 'friend' || person.type === 'friends' ? 'friends' : 'family',
-      location: person.location || (person.lat != null && person.lng != null ? 'Saved GPS location' : '')
-    }));
+    const accountKey = `${CONTACTS_KEY}:${userId}`;
+    const saved = localStorage.getItem(accountKey);
+    if (saved) return normalizeContacts(JSON.parse(saved));
+    // One-time migration: move old device-only contacts to the first account that opens this version.
+    const legacy = localStorage.getItem(CONTACTS_KEY) || localStorage.getItem('find-my-family-people-v1');
+    if (!legacy) return [];
+    const records = normalizeContacts(JSON.parse(legacy));
+    localStorage.setItem(accountKey, JSON.stringify(records));
+    localStorage.removeItem(CONTACTS_KEY);
+    localStorage.removeItem('find-my-family-people-v1');
+    return records;
   } catch {
     return [];
   }
@@ -49,7 +59,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [page, setPage] = useState('home');
-  const [contacts, setContacts] = useState(readContacts);
+  const [contacts, setContacts] = useState([]);\n  const [contactsLoadedFor, setContactsLoadedFor] = useState(null);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -70,8 +80,55 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    try { localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts)); } catch { /* storage may be unavailable */ }
-  }, [contacts]);
+    let alive = true;
+    if (!user?.id || !supabase) {
+      setContacts([]);
+      setContactsLoadedFor(null);
+      return () => { alive = false; };
+    }
+    setContactsLoadedFor(null);
+    async function loadContacts() {
+      const localContacts = readLocalContacts(user.id);
+      const { data, error } = await supabase.from('contact_books').select('contacts').eq('user_id', user.id).maybeSingle();
+      if (!alive) return;
+      if (error) {
+        setContacts(localContacts);
+        setNotice('Cloud contacts could not load. Showing this account’s saved contacts on this device.');
+      } else if (data?.contacts && Array.isArray(data.contacts)) {
+        setContacts(normalizeContacts(data.contacts));
+      } else {
+        setContacts(localContacts);
+        if (localContacts.length) {
+          const { error: saveError } = await supabase.from('contact_books').upsert({ user_id: user.id, contacts: localContacts, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+          if (saveError && alive) setNotice('Contacts are local for now. Cloud sync needs the latest Supabase migration.');
+        }
+      }
+      if (alive) setContactsLoadedFor(user.id);
+    }
+    loadContacts().catch(() => {
+      if (alive) {
+        setContacts(readLocalContacts(user.id));
+        setContactsLoadedFor(user.id);
+        setNotice('Cloud contacts could not load. Check your connection and Supabase setup.');
+      }
+    });
+    return () => { alive = false; };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || contactsLoadedFor !== user.id) return;
+    try { localStorage.setItem(`${CONTACTS_KEY}:${user.id}`, JSON.stringify(contacts)); } catch { /* storage may be unavailable */ }
+    if (!supabase) return;
+    const sync = async () => {
+      const { error } = await supabase.from('contact_books').upsert({
+        user_id: user.id,
+        contacts,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+      if (error) setNotice('Contacts are saved on this device, but cloud sync failed. Check that migration 003 has been run.');
+    };
+    sync();
+  }, [contacts, contactsLoadedFor, user?.id]);
 
   async function handleSubmit(event) {
     event.preventDefault();
