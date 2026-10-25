@@ -6,3 +6,13 @@ node_modules/
 *.sqlite3
 *.db
 *.log
+ngrok-v3-stable-linux-arm64.tgz
+
+# Local secrets and generated files
+.env
+.env.*
+!.env.example
+node_modules/
+frontend/node_modules/
+frontend/dist/
+ngrok-v3-stable-linux-arm64.tgz
