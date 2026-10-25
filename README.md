@@ -1,103 +1,81 @@
 # Find My Family
 
-A mobile-friendly family contact app with an installable Progressive Web App (PWA) shell, a polished local profile setup screen, and editable profile details. Features include Family/Friends lists, add/edit person details, Call Now, device GPS capture, saved coordinates, and Google Maps directions.
+Find My Family is a mobile-first React app with a Node.js/Express production server. It includes email/password sign-in through Supabase, editable Family and Friends contacts, circular photo avatars, phone dialer shortcuts, saved GPS coordinates, Google Maps links, expiring live-location links, a registered-member directory, follow/unfollow, direct chats and group chats.
 
-## Run locally in Termux
+## Run on Android with Termux
 
-```sh
-pkg update
-pkg install nodejs
-npm install
-npm start
-```
+Install Node.js in Termux, then from the repository folder:
 
-Open `http://127.0.0.1:3000` in Chrome on the same phone.
+    pkg update
+    pkg install nodejs
+    npm install
+    npm install --prefix frontend
 
-## Install on Android
+Create frontend/.env.local with your Supabase project URL and publishable/anon key:
 
-For installation on your phone and family members' phones, deploy this project to a public HTTPS host first (for example, a Node-compatible hosting provider). Then open the hosted HTTPS address in Chrome and choose **Install app** if shown, or Chrome menu → **Add to Home screen**. The PWA files include a custom SVG app icon, web manifest, and service worker for caching the app shell.
+    VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+    VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
 
-The Share app button shares the current website address. A localhost address only works on the same device; it is not a public link.
+Use the project's real values; do not commit .env.local, service-role keys, or other secrets. Enable Email authentication in Supabase. This project intentionally uses email/password only; Google sign-in is not included.
 
-## Important privacy and sharing limits
+Start the development server:
 
-- This version stores contact entries and saved coordinates in the current browser's local storage on that device only.
-- Saving a location for a person captures the current phone's GPS; it does not locate that person.
-- Sharing the website link does not sync contacts between family phones.
-- True family sharing/live location requires HTTPS, secure sign-in, a server database, invitation/access controls, and explicit consent from each person whose location is shared. Those backend features are not included yet.
-- Call Now opens the phone dialer; the user confirms the call.
-- Geolocation is available only in a secure browser context such as HTTPS or localhost.
+    npm run dev
 
-## Optional embedded Google Maps
+Open the Vite URL shown in Termux. On the same phone, it is normally http://127.0.0.1:5173. Stop it with Ctrl+C.
 
-To show an interactive embedded map, enable the Google Maps JavaScript API and configure a restricted key. Directions can be opened in Google Maps without an API key.
+## Build and run the production app
 
+    npm install
+    npm install --prefix frontend
+    npm run build
+    npm start
 
-## Profile setup and login-screen UI
+The Express server serves frontend/dist on port 3000 when the build exists. Check http://127.0.0.1:3000/health for server status. If you edit the React frontend, run npm run build again before testing the production server.
 
-- First launch shows the redesigned welcome/profile setup screen. Enter a display name and optional email to continue on this device.
-- Use the Profile control in the app header to update the display name, optional email, and profile photo, or reset the local profile.
-- Profile details and profile photos are stored in this browser's local storage only.
-- **Security limitation:** this is a local profile/onboarding UI, not real authentication. There is no server-side account, password verification, account recovery, or cross-device profile sync. Do not use it to protect sensitive information. Real login and family sharing need a backend authentication provider and a database.
+## Deploy and install on family phones
 
+Deploy the repository to a Node.js host with a persistent HTTPS domain. Configure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY as build-time environment variables on the host, install both root and frontend dependencies, run npm run build, then start with npm start. The host must expose the configured port.
 
-## Firebase email/password and Google authentication
+Open the HTTPS site in Chrome on Android and choose Install app or Chrome menu → Add to Home screen. The app has a custom SVG icon, web manifest, and service worker. A localhost or Termux LAN URL is not a public link for relatives.
 
-This repository now includes a Firebase Authentication sign-in UI. To activate it:
+## Features
 
-1. In Firebase Console, open **Authentication → Sign-in method** and enable **Email/Password** and **Google**.
-2. In **Project settings → General → Your apps**, register/select a Web app and copy its Firebase web configuration.
-3. Edit `public/firebase-config.js` and replace every `REPLACE_WITH_...` value with the matching Firebase web config value. These web config values are intended for client apps; never put a service-account private key or Admin SDK secret in this file.
-4. In **Authentication → Settings → Authorized domains**, add the exact domain hosting this app. For local testing, use `localhost`; a temporary trycloudflare domain changes and is not a reliable production domain.
-5. Run `npm start` and open the app using localhost or the deployed HTTPS URL. Email account creation, email sign-in, password-reset email, Google popup sign-in and sign-out are handled by Firebase Auth.
+- Account access: Supabase email/password sign-up, sign-in and sign-out.
+- Family and Friends: create, search, edit and delete contact records, including name, relationship, group, phone, location name, GPS coordinates and photo.
+- Circular photos: upload JPG/PNG/WEBP images; the app compresses them before saving.
+- Call now: opens the device dialer with the saved phone number; the user confirms the call.
+- GPS and maps: capture the current device location, save coordinates, preview them on Google Maps, or open a saved place.
+- Live location: start and stop a time-limited share link. The current implementation uses the signed-in device's GPS and needs the location-sharing migration below.
+- Community: find registered members, follow/unfollow, start direct chats and create group chats. The social migration below is required.
+- Installable shell: branded icon, web manifest, and production service worker.
 
-Firebase Authentication does **not** itself sync contacts, profile photos or GPS. Those remain browser-local until a database and authenticated per-user/family access rules are implemented. Do not share sensitive family data until those rules are in place. Google popup sign-in may be blocked by some embedded browsers; open the hosted app in Chrome if needed.
+## Required Supabase setup
 
+Use the same Supabase project for development and deployment.
 
-## Online group codes
+1. In Supabase, enable Authentication → Sign-in methods → Email.
+2. Open SQL Editor and run the complete migration files in this order:
+   - Location sharing: supabase/migrations/202610250001_location_sharing.sql
+   - Registered members and chats: supabase/migrations/202610250002_social_follows_chats.sql
+3. Confirm the frontend environment variables above point to that project.
+4. Test with two separate registered accounts on an HTTPS deployment or localhost. Grant browser location permission when testing GPS.
 
-See [GROUP-CODES-SETUP.md](GROUP-CODES-SETUP.md) for Firebase Firestore setup, rule deployment, and cross-device testing. Group membership and messages sync online; personal contacts and saved GPS coordinates remain local to each phone.
+The migrations configure tables and row-level security for the documented location-sharing and social features. If a migration has not been run, the corresponding feature will report a setup error.
 
+## Privacy and current storage boundaries
 
-## Location upload, map selection, and live sharing
+- Contacts and contact photos are currently stored in this browser's local storage on this device. They do not automatically sync to your dad's or another family member's phone. Cloud contact/photo sync needs a separate per-user/family database design and Storage policies.
+- GPS capture captures the location of the phone using the button. It does not discover another person's location.
+- Live sharing shares the signed-in phone's location only after the user starts sharing. Anyone holding the generated link may view the shared location until it expires or sharing is stopped; send it only to people you trust.
+- Background tracking: browser location updates require the page/browser to remain active and location permission to stay enabled. This is not a guaranteed background-tracking native Android app.
+- Chats: only registered accounts can follow or chat. Manually added contacts are not automatically accounts or chat recipients.
+- Keys: the Supabase publishable/anon key is designed for browser use with correct row-level security. Never place a Supabase service-role key in frontend code.
 
-The React frontend now includes these location controls:
+## Troubleshooting
 
-- **Upload current GPS location** captures the device's current coordinates and stores them with the selected contact in that browser.
-- **Choose a place in Google Maps** opens Google Maps search. Enter the place/address and its latitude and longitude in the contact form, then save. A Google Maps API key is not needed to open map links.
-- **Go now / Preview on Google Maps** opens the saved coordinates in Google Maps.
-- **Live location sharing** starts browser GPS updates and creates a private link that can be sent to a chosen recipient using the phone's share sheet. The link expires after one hour and can be stopped early. The recipient's page refreshes the location every five seconds.
-
-### Required one-time Supabase database setup
-
-1. Open the Supabase project connected in `frontend/.env.local`.
-2. Open **SQL Editor** in the Supabase dashboard.
-3. Copy and run the complete SQL from [supabase/migrations/202610250001_location_sharing.sql](supabase/migrations/202610250001_location_sharing.sql).
-4. Make sure the frontend uses the project's Supabase URL and publishable key. Never put a service-role/secret key in the frontend.
-5. Test on an HTTPS deployment (or localhost for testing) and grant precise location permission when prompted.
-
-The migration adds a `location_shares` table protected by row-level security. Authenticated users can manage only their own share rows. A narrowly scoped database function returns only the active location matching the secret share token. Anyone holding that link can view that location until the one-hour expiry or until the owner stops sharing, so send it only to people you trust.
-
-**Important boundaries:** contact cards and their saved coordinates still use browser local storage; this update does not migrate existing contacts into a shared cloud contacts database. Live sharing tracks the signed-in phone/browser that starts sharing—it does not secretly locate another family member. The browser must remain open with location permission enabled for continuous updates. A local `127.0.0.1` or development-server URL is not usable by relatives on other devices; deploy the frontend to a public HTTPS host before sending share links.
-
-
-## Registered members, follows, and chats
-
-The app now includes a **Chats** navigation section and a registered-member directory in **Friends**.
-
-- **Follow / Unfollow:** follow another registered Find My Family account, see who follows you, and filter the directory to accounts you follow.
-- **Direct chats:** open a one-to-one conversation with another registered member.
-- **Group chats:** create a named group and choose at least two other registered members.
-- **Messaging:** send text messages, view conversation history, and receive new messages through Supabase Realtime when enabled.
-- **Access control:** chat history and membership are protected by Supabase row-level security; users must be members of a conversation to read or send messages.
-
-### One-time social database setup
-
-1. Open the Supabase project used by the app.
-2. Open **SQL Editor**.
-3. Copy and run the full file [supabase/migrations/202610250002_social_follows_chats.sql](supabase/migrations/202610250002_social_follows_chats.sql).
-4. Refresh the frontend after the migration finishes.
-
-The migration creates a profile row for every existing auth user and a trigger for new sign-ups, plus follow relationships, conversations, membership, and messages. The profile directory shows display names derived from the account's email prefix by default; it does not expose email addresses through the profile table.
-
-**Important:** both people in a direct chat, and every group member, must have their own Find My Family account and be signed in. Existing manually added Family/Friends contacts are still stored in browser local storage and are not automatically app accounts or chat recipients. A user can only message registered profiles. For the best cross-device experience, deploy the frontend over HTTPS and keep the same Supabase project configured in every deployed copy.
+- Supabase not configured: check frontend/.env.local, then restart Vite.
+- Social or live-share setup error: run both SQL migration files in Supabase SQL Editor and check that each finished successfully.
+- GPS unavailable: allow location permission and use localhost or HTTPS.
+- Changes not visible in production: run npm run build again and reload the hosted app.
+- Check server: open /health on the deployed URL.
