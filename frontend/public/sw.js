@@ -49,6 +49,9 @@ self.addEventListener('fetch', (event) => {
             caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
           return response;
+        }).catch((error) => {
+          if (cached) return cached;
+          throw error;
         });
         return cached || network;
       })
