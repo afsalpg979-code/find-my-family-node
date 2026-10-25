@@ -131,6 +131,23 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [contacts, contactsLoadedFor, user?.id]);
 
+  useEffect(() => {
+    if (!supabase || !user?.id || contactsLoadedFor !== user.id) return undefined;
+    const channel = supabase.channel('fmf-contact-book-' + user.id)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'contact_books',
+        filter: 'user_id=eq.' + user.id
+      }, payload => {
+        if (!payload.new?.contacts || !Array.isArray(payload.new.contacts)) return;
+        const incoming = normalizeContacts(payload.new.contacts);
+        setContacts(current => JSON.stringify(current) === JSON.stringify(incoming) ? current : incoming);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, contactsLoadedFor]);
+
   async function handleSubmit(event) {
     event.preventDefault();
     setMessage('');
