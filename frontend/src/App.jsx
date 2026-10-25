@@ -12,8 +12,17 @@ const CONTACTS_KEY = 'fmf-contacts-v1';
 
 function readContacts() {
   try {
+    // Migrate records from the previous Find My Family version when it shares this browser origin.
     const saved = localStorage.getItem(CONTACTS_KEY);
-    return saved ? JSON.parse(saved) : [];
+    const legacy = saved ? null : localStorage.getItem('find-my-family-people-v1');
+    const records = saved ? JSON.parse(saved) : legacy ? JSON.parse(legacy) : [];
+    if (!Array.isArray(records)) return [];
+    return records.map(person => ({
+      ...person,
+      id: String(person.id ?? Date.now() + Math.random()),
+      type: person.type === 'friend' || person.type === 'friends' ? 'friends' : 'family',
+      location: person.location || (person.lat != null && person.lng != null ? 'Saved GPS location' : '')
+    }));
   } catch {
     return [];
   }
