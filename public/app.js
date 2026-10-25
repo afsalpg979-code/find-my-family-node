@@ -71,6 +71,8 @@ function openPersonDialog(type) {
   $("personForm").reset();
   $("personPhoto").value = "";
   $("personPhoto").dataset.remove = "false";
+  $("personPhoto").dataset.cameraPhoto = "";
+  $("personCameraInput").value = "";
   $("photoPreviewWrap").hidden = true;
   $("photoPreview").removeAttribute("src");
   $("dialogTitle").textContent = type === "family" ? "Add Family Member" : "Add Friend";
@@ -110,6 +112,7 @@ $("personForm").addEventListener("submit", async e => {
   }
 
   let photo = editingId ? (people.find(p => String(p.id) === String(editingId))?.photo || "") : "";
+  if ($("personPhoto").dataset.cameraPhoto) photo = $("personPhoto").dataset.cameraPhoto;
   const photoFile = $("personPhoto").files?.[0];
   if (photoFile) {
     if (!photoFile.type.startsWith("image/")) return toast("Please choose an image file.");
@@ -207,6 +210,8 @@ function editPerson(id) {
   $("personLng").value = p.lng == null ? "" : p.lng;
   $("personPhoto").value = "";
   $("personPhoto").dataset.remove = "false";
+  $("personPhoto").dataset.cameraPhoto = "";
+  $("personCameraInput").value = "";
   if (p.photo) {
     $("photoPreview").src = p.photo;
     $("photoPreviewWrap").hidden = false;
@@ -315,6 +320,7 @@ function compressProfilePhoto(file) {
 $("personPhoto")?.addEventListener("change", async () => {
   const file = $("personPhoto").files?.[0];
   $("personPhoto").dataset.remove = "false";
+  $("personPhoto").dataset.cameraPhoto = "";
   if (!file) return;
   if (!file.type.startsWith("image/")) {
     $("personPhoto").value = "";
@@ -333,6 +339,8 @@ $("personPhoto")?.addEventListener("change", async () => {
 $("removePhotoBtn")?.addEventListener("click", () => {
   $("personPhoto").value = "";
   $("personPhoto").dataset.remove = "true";
+  $("personPhoto").dataset.cameraPhoto = "";
+  $("personCameraInput").value = "";
   $("photoPreview").removeAttribute("src");
   $("photoPreviewWrap").hidden = true;
   toast("Photo will be removed when you save this person.");
@@ -381,6 +389,8 @@ $("profileBtn").addEventListener("click", () => {
   }
   $("profilePhotoInput").value = "";
   $("profilePhotoInput").dataset.remove = "false";
+  $("profilePhotoInput").dataset.cameraPhoto = "";
+  $("profileCameraInput").value = "";
   $("profileDialog").showModal();
 });
 $("closeProfileBtn").addEventListener("click", () => $("profileDialog").close());
@@ -389,6 +399,7 @@ $("profileForm").addEventListener("submit", async (event) => {
   const name = $("profileNameEdit").value.trim();
   if (!name) return toast("Please enter your name.");
   let photo = localProfile?.photo || "";
+  if ($("profilePhotoInput").dataset.cameraPhoto) photo = $("profilePhotoInput").dataset.cameraPhoto;
   const file = $("profilePhotoInput").files?.[0];
   if (file) {
     if (!file.type.startsWith("image/")) return toast("Choose an image file.");
@@ -405,6 +416,7 @@ $("profileForm").addEventListener("submit", async (event) => {
 $("profilePhotoInput").addEventListener("change", async () => {
   const file = $("profilePhotoInput").files?.[0];
   $("profilePhotoInput").dataset.remove = "false";
+  $("profilePhotoInput").dataset.cameraPhoto = "";
   if (!file) return;
   if (!file.type.startsWith("image/")) { $("profilePhotoInput").value = ""; return toast("Choose an image file."); }
   if (file.size > 10 * 1024 * 1024) { $("profilePhotoInput").value = ""; return toast("Choose a photo smaller than 10 MB."); }
@@ -416,6 +428,8 @@ $("profilePhotoInput").addEventListener("change", async () => {
 $("removeProfilePhotoBtn").addEventListener("click", () => {
   $("profilePhotoInput").value = "";
   $("profilePhotoInput").dataset.remove = "true";
+  $("profilePhotoInput").dataset.cameraPhoto = "";
+  $("profileCameraInput").value = "";
   $("profilePhotoPreview").removeAttribute("src");
   $("profilePhotoPreviewWrap").hidden = true;
 });
@@ -431,3 +445,46 @@ $("localSignOutBtn").addEventListener("click", () => {
 });
 if (localProfile?.name) enterLocalApp();
 else $("loginScreen").hidden = false;
+
+
+// Separate camera and gallery controls for person photos and the user's profile.
+// The camera input uses capture=environment to request the rear camera where supported.
+function openPhotoPicker(inputId, camera = false) {
+  const input = $(inputId);
+  if (!input) return;
+  input.value = "";
+  if (camera) input.setAttribute("capture", "environment");
+  else input.removeAttribute("capture");
+  input.click();
+}
+$("personCameraBtn")?.addEventListener("click", () => openPhotoPicker("personCameraInput", true));
+$("personUploadBtn")?.addEventListener("click", () => openPhotoPicker("personPhoto", false));
+$("profileCameraBtn")?.addEventListener("click", () => openPhotoPicker("profileCameraInput", true));
+$("profileUploadBtn")?.addEventListener("click", () => openPhotoPicker("profilePhotoInput", false));
+
+function bindAlternatePhotoInput(inputId, previewId, wrapId, primaryInputId) {
+  $(inputId)?.addEventListener("change", async () => {
+    const file = $(inputId).files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      $(inputId).value = "";
+      return toast("Please choose an image file.");
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      $(inputId).value = "";
+      return toast("Please choose a photo smaller than 10 MB.");
+    }
+    try {
+      const compressed = await compressProfilePhoto(file);
+      // Copy the compressed image into the main field's dataset; the save handler reads it below.
+      $(primaryInputId).dataset.cameraPhoto = compressed;
+      $(primaryInputId).dataset.remove = "false";
+      $(previewId).src = compressed;
+      $(wrapId).hidden = false;
+    } catch {
+      toast("Could not read that photo. Please try again.");
+    }
+  });
+}
+bindAlternatePhotoInput("personCameraInput", "photoPreview", "photoPreviewWrap", "personPhoto");
+bindAlternatePhotoInput("profileCameraInput", "profilePhotoPreview", "profilePhotoPreviewWrap", "profilePhotoInput");
