@@ -130,6 +130,7 @@ if (!validateConfig()) {
   // The existing profile dialog's reset button becomes a real Firebase sign-out action.
   $("localSignOutBtn")?.addEventListener("click", async event => {
     event.preventDefault();
+    event.stopImmediatePropagation();
     if (!confirm("Sign out of Find My Family on this device? Your locally saved contacts will remain on this device.")) return;
     try { await signOut(auth); }
     catch (error) { showMessage(friendlyError(error)); }
