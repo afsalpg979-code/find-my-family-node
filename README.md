@@ -52,3 +52,8 @@ This repository now includes a Firebase Authentication sign-in UI. To activate i
 5. Run `npm start` and open the app using localhost or the deployed HTTPS URL. Email account creation, email sign-in, password-reset email, Google popup sign-in and sign-out are handled by Firebase Auth.
 
 Firebase Authentication does **not** itself sync contacts, profile photos or GPS. Those remain browser-local until a database and authenticated per-user/family access rules are implemented. Do not share sensitive family data until those rules are in place. Google popup sign-in may be blocked by some embedded browsers; open the hosted app in Chrome if needed.
+
+
+## Online group codes
+
+See [GROUP-CODES-SETUP.md](GROUP-CODES-SETUP.md) for Firebase Firestore setup, rule deployment, and cross-device testing. Group membership and messages sync online; personal contacts and saved GPS coordinates remain local to each phone.
