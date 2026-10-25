@@ -43,7 +43,7 @@ select{font:inherit;border:1px solid #d6e0ea;border-radius:10px;padding:12px;min
 
 
 /* Login screen and local profile UX */
-body:not(.profile-ready)>.topbar,body:not(.profile-ready)>main{display:none}
+
 .login-screen{position:fixed;inset:0;z-index:20;overflow:auto;display:grid;place-items:center;padding:24px 16px;background:radial-gradient(ellipse at 50% 0%,#244c61 0%,#10243a 48%,#091522 100%);color:#f5fbff}
 .login-screen[hidden]{display:none}
 .login-card{position:relative;z-index:1;width:min(100%,420px);padding:28px 24px 22px;border:1px solid #ffffff20;border-radius:28px;background:#ffffff0d;box-shadow:0 24px 90px #0005;backdrop-filter:blur(18px);text-align:center}
