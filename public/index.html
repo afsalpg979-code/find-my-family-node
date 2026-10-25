@@ -74,10 +74,12 @@
       <label>Full name<input id="personName" required maxlength="80" autocomplete="name" placeholder="e.g. Amina"></label>
       <label>Relationship / label<input id="personRelation" maxlength="60" placeholder="e.g. Mother, Cousin, Best friend"></label>
       <label>Phone number<input id="personPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="e.g. +91 98765 43210"></label>
-      <label class="photo-upload-label">Profile photo
-        <input id="personPhoto" type="file" accept="image/*" capture="user">
-        <span class="photo-hint">Choose a photo or take one with your camera (optional).</span>
-      </label>
+      <div class="photo-upload-label"><span class="photo-field-title">Profile photo <span class="optional-label">optional</span></span>
+        <input id="personPhoto" class="photo-file-input" type="file" accept="image/*">
+        <input id="personCameraInput" class="photo-file-input" type="file" accept="image/*" capture="environment">
+        <div class="photo-choice-row"><button type="button" class="secondary photo-choice" id="personCameraBtn">📷 Take photo</button><button type="button" class="secondary photo-choice" id="personUploadBtn">↑ Upload photo</button></div>
+        <span class="photo-hint">Take a new photo with your camera or choose an image from your phone.</span>
+      </div>
       <div id="photoPreviewWrap" class="photo-preview-wrap" hidden>
         <img id="photoPreview" alt="Selected profile photo preview">
         <button type="button" id="removePhotoBtn" class="secondary">Remove photo</button>
@@ -104,7 +106,12 @@
     <form id="profileForm" method="dialog">
       <div class="profile-dialog-heading"><div><p class="eyebrow">YOUR ACCOUNT</p><h2>My Profile</h2></div><button type="button" id="closeProfileBtn" class="icon-close" aria-label="Close profile">×</button></div>
       <div class="profile-avatar-large" id="profileAvatarLarge">👤</div>
-      <label class="photo-upload-label">Profile picture <input id="profilePhotoInput" type="file" accept="image/*" capture="user"><span class="photo-hint">Choose a photo or use your camera.</span></label>
+      <div class="photo-upload-label"><span class="photo-field-title">Profile picture <span class="optional-label">optional</span></span>
+        <input id="profilePhotoInput" class="photo-file-input" type="file" accept="image/*">
+        <input id="profileCameraInput" class="photo-file-input" type="file" accept="image/*" capture="environment">
+        <div class="photo-choice-row"><button type="button" class="secondary photo-choice" id="profileCameraBtn">📷 Take photo</button><button type="button" class="secondary photo-choice" id="profileUploadBtn">↑ Upload photo</button></div>
+        <span class="photo-hint">Take a new photo or choose one from your gallery.</span>
+      </div>
       <div id="profilePhotoPreviewWrap" class="photo-preview-wrap" hidden><img id="profilePhotoPreview" alt="Profile photo preview"><button type="button" id="removeProfilePhotoBtn" class="secondary">Remove photo</button></div>
       <label for="profileNameEdit">Display name<input id="profileNameEdit" required maxlength="80" autocomplete="name"></label>
       <label for="profileEmailEdit">Email <span class="optional-label">optional</span><input id="profileEmailEdit" type="email" maxlength="120" autocomplete="email"></label>
