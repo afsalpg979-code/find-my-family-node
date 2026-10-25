@@ -60,6 +60,8 @@
       <button class="tile" data-view="friends"><span>🤝</span><b>Friends</b><small>View friends</small></button>
       <button class="tile" id="addFamilyBtn"><span>➕</span><b>Add Family</b><small>Save a person</small></button>
       <button class="tile" id="addFriendBtn"><span>💚</span><b>Add Friend</b><small>Save a person</small></button>
+      <button class="tile group-tile" data-group-create="family"><span>👨‍👩‍👧‍👦</span><b>Family Groups</b><small>Create a family chat</small></button>
+      <button class="tile group-tile" data-group-create="friend"><span>💬</span><b>Friends Groups</b><small>Create a friends chat</small></button>
     </section>
 
     <section class="panel">
@@ -68,6 +70,16 @@
       <p id="emptyState" class="empty">No people added yet. Use Add Family or Add Friend to get started.</p>
     </section>
 
+    <section class="panel groups-panel" id="familyGroupsPanel">
+      <div class="section-heading"><h2>Family Groups</h2><button class="primary" type="button" data-group-create="family">+ Create Group</button></div>
+      <p class="hint">Create a group and chat with selected family members.</p><div id="familyGroupsList" class="groups-list"></div>
+      <p id="familyGroupsEmpty" class="empty">No family groups yet. Create one to get started.</p>
+    </section>
+    <section class="panel groups-panel" id="friendsGroupsPanel">
+      <div class="section-heading"><h2>Friends Groups</h2><button class="primary" type="button" data-group-create="friend">+ Create Group</button></div>
+      <p class="hint">Keep friends' group conversations separate from family.</p><div id="friendsGroupsList" class="groups-list"></div>
+      <p id="friendsGroupsEmpty" class="empty">No friends groups yet. Create one to get started.</p>
+    </section>
     <section class="panel map-panel">
       <div class="section-heading"><h2>Map</h2><button id="openMapBtn" class="secondary">Open in Google Maps ↗</button></div>
       <div id="map"><div class="map-placeholder"><strong>📍 Your map space</strong><p>Save a location to view coordinates and open directions in Google Maps.</p></div></div>
@@ -127,8 +139,24 @@
       <div class="dialog-actions"><button type="button" id="localSignOutBtn" class="secondary">Reset profile</button><button type="submit" class="primary">Save profile</button></div>
     </form>
   </dialog>
+  <dialog id="groupDialog" class="group-dialog">
+    <form id="groupForm">
+      <div class="group-dialog-heading"><div><p class="eyebrow">YOUR CIRCLE</p><h2 id="groupDialogTitle">Create Group</h2></div><button type="button" id="closeGroupDialog" class="icon-close" aria-label="Close">×</button></div>
+      <label for="groupName">Group name<input id="groupName" maxlength="80" required placeholder="e.g. Home Team"></label>
+      <p class="group-members-title">Choose members</p><div id="groupMemberChoices" class="group-member-choices"></div>
+      <p id="groupNoPeople" class="hint">Add family or friends first to select group members.</p>
+      <div class="dialog-actions"><button type="button" id="cancelGroupDialog" class="secondary">Cancel</button><button type="submit" class="primary">Save Group</button></div>
+    </form>
+  </dialog>
+  <dialog id="groupChatDialog" class="group-chat-dialog">
+    <div class="group-chat-head"><div><p class="eyebrow">GROUP CONVERSATION</p><h2 id="groupChatTitle">Group Chat</h2><p id="groupChatMeta" class="hint"></p></div><button type="button" id="closeGroupChat" class="icon-close" aria-label="Close chat">×</button></div>
+    <div id="groupMessages" class="group-messages" aria-live="polite"></div>
+    <form id="groupMessageForm" class="group-message-form"><label class="sr-only" for="groupMessageInput">Message</label><input id="groupMessageInput" maxlength="2000" autocomplete="off" placeholder="Write a message…" required><button class="primary" type="submit">Send</button></form>
+    <p class="group-local-warning">Prototype chat: groups and messages are saved only in this browser on this device. Real-time sharing with other phones requires connecting Firestore and setting secure database rules.</p>
+  </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="/app.js"></script>
+  <script src="/groups.js"></script>
   <script type="module" src="/auth.js"></script>
 </body>
 </html>
