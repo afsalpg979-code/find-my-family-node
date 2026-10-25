@@ -79,3 +79,25 @@ The React frontend now includes these location controls:
 The migration adds a `location_shares` table protected by row-level security. Authenticated users can manage only their own share rows. A narrowly scoped database function returns only the active location matching the secret share token. Anyone holding that link can view that location until the one-hour expiry or until the owner stops sharing, so send it only to people you trust.
 
 **Important boundaries:** contact cards and their saved coordinates still use browser local storage; this update does not migrate existing contacts into a shared cloud contacts database. Live sharing tracks the signed-in phone/browser that starts sharing—it does not secretly locate another family member. The browser must remain open with location permission enabled for continuous updates. A local `127.0.0.1` or development-server URL is not usable by relatives on other devices; deploy the frontend to a public HTTPS host before sending share links.
+
+
+## Registered members, follows, and chats
+
+The app now includes a **Chats** navigation section and a registered-member directory in **Friends**.
+
+- **Follow / Unfollow:** follow another registered Find My Family account, see who follows you, and filter the directory to accounts you follow.
+- **Direct chats:** open a one-to-one conversation with another registered member.
+- **Group chats:** create a named group and choose at least two other registered members.
+- **Messaging:** send text messages, view conversation history, and receive new messages through Supabase Realtime when enabled.
+- **Access control:** chat history and membership are protected by Supabase row-level security; users must be members of a conversation to read or send messages.
+
+### One-time social database setup
+
+1. Open the Supabase project used by the app.
+2. Open **SQL Editor**.
+3. Copy and run the full file [supabase/migrations/202610250002_social_follows_chats.sql](supabase/migrations/202610250002_social_follows_chats.sql).
+4. Refresh the frontend after the migration finishes.
+
+The migration creates a profile row for every existing auth user and a trigger for new sign-ups, plus follow relationships, conversations, membership, and messages. The profile directory shows display names derived from the account's email prefix by default; it does not expose email addresses through the profile table.
+
+**Important:** both people in a direct chat, and every group member, must have their own Find My Family account and be signed in. Existing manually added Family/Friends contacts are still stored in browser local storage and are not automatically app accounts or chat recipients. A user can only message registered profiles. For the best cross-device experience, deploy the frontend over HTTPS and keep the same Supabase project configured in every deployed copy.
