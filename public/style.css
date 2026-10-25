@@ -96,3 +96,14 @@ body:not(.profile-ready)>.topbar,body:not(.profile-ready)>main{display:none}
 .photo-upload-label .photo-hint{line-height:1.45}
 .profile-dialog .photo-choice{background:#1c4054;color:#effaf7;border:1px solid #ffffff20}
 .photo-choice:focus-visible{outline:3px solid #57dcb0;outline-offset:2px}
+
+
+/* Firebase authentication controls */
+.auth-message{display:none;margin:12px 0;padding:10px 12px;border-radius:12px;text-align:left;font-size:12px;line-height:1.45;background:#fff3cd;color:#624b00}
+.auth-message.visible{display:block}
+.auth-secondary,.auth-google{width:100%;min-height:46px;border-radius:13px;font:750 13px system-ui,sans-serif;cursor:pointer}
+.auth-secondary{border:1px solid #ffffff35;background:#ffffff0e;color:#eff8ff}
+.auth-google{display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid #d7e0e8;background:#fff;color:#233344}
+.google-g{font:bold 19px Arial,sans-serif;color:#4285f4}
+.auth-reset{border:0;background:transparent;color:#b9d7ef;text-decoration:underline;padding:8px;cursor:pointer;font:600 12px system-ui,sans-serif}
+.login-form button:disabled{opacity:.65;cursor:wait}
