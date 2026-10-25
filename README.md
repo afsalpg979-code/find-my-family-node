@@ -1,6 +1,6 @@
 # Find My Family
 
-A mobile-friendly family contact app with an installable Progressive Web App (PWA) shell. Features include Family/Friends lists, add/edit person details, Call Now, device GPS capture, saved coordinates, and Google Maps directions.
+A mobile-friendly family contact app with an installable Progressive Web App (PWA) shell, a polished local profile setup screen, and editable profile details. Features include Family/Friends lists, add/edit person details, Call Now, device GPS capture, saved coordinates, and Google Maps directions.
 
 ## Run locally in Termux
 
@@ -31,3 +31,11 @@ The Share app button shares the current website address. A localhost address onl
 ## Optional embedded Google Maps
 
 To show an interactive embedded map, enable the Google Maps JavaScript API and configure a restricted key. Directions can be opened in Google Maps without an API key.
+
+
+## Profile setup and login-screen UI
+
+- First launch shows the redesigned welcome/profile setup screen. Enter a display name and optional email to continue on this device.
+- Use the Profile control in the app header to update the display name, optional email, and profile photo, or reset the local profile.
+- Profile details and profile photos are stored in this browser's local storage only.
+- **Security limitation:** this is a local profile/onboarding UI, not real authentication. There is no server-side account, password verification, account recovery, or cross-device profile sync. Do not use it to protect sensitive information. Real login and family sharing need a backend authentication provider and a database.
