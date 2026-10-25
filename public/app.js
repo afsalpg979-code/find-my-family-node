@@ -48,7 +48,7 @@ function render() {
     const phone = normalisePhone(p.phone);
     const locationSaved = p.lat != null && p.lng != null;
     return `<article class="person">
-      <div class="avatar">${escapeHtml((p.name || "?").trim().slice(0, 1).toUpperCase())}</div>
+      <div class="avatar">${p.photo ? `<img src="${p.photo}" alt="" loading="lazy">` : escapeHtml((p.name || "?").trim().slice(0, 1).toUpperCase())}</div>
       <div class="person-info">
         <b>${escapeHtml(p.name)}</b>
         <small>${escapeHtml(p.relation || ((p.type || "family") === "family" ? "Family member" : "Friend"))} · ${phone ? escapeHtml(p.phone) + " · " : ""}${locationSaved ? "Location saved" : "No location saved"}</small>
@@ -69,6 +69,10 @@ function openPersonDialog(type) {
   editingId = null;
   pendingType = type;
   $("personForm").reset();
+  $("personPhoto").value = "";
+  $("personPhoto").dataset.remove = "false";
+  $("photoPreviewWrap").hidden = true;
+  $("photoPreview").removeAttribute("src");
   $("dialogTitle").textContent = type === "family" ? "Add Family Member" : "Add Friend";
   $("personType").value = type;
   $("personLat").value = "";
@@ -87,7 +91,7 @@ document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
   document.querySelector(".panel").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
-$("personForm").addEventListener("submit", e => {
+$("personForm").addEventListener("submit", async e => {
   e.preventDefault();
   const name = $("personName").value.trim();
   if (!name) return toast("Name cannot be empty.");
@@ -105,13 +109,24 @@ $("personForm").addEventListener("submit", e => {
     }
   }
 
+  let photo = editingId ? (people.find(p => String(p.id) === String(editingId))?.photo || "") : "";
+  const photoFile = $("personPhoto").files?.[0];
+  if (photoFile) {
+    if (!photoFile.type.startsWith("image/")) return toast("Please choose an image file.");
+    if (photoFile.size > 10 * 1024 * 1024) return toast("Please choose a photo smaller than 10 MB.");
+    try { photo = await compressProfilePhoto(photoFile); }
+    catch { return toast("Could not read this photo. Please choose another image."); }
+  }
+  if ($("personPhoto").dataset.remove === "true") photo = "";
+
   const data = {
     name,
     relation: $("personRelation").value.trim(),
     phone: $("personPhone").value.trim(),
     type: $("personType").value === "friend" ? "friend" : "family",
     lat,
-    lng
+    lng,
+    photo
   };
   if (editingId) {
     const person = people.find(p => String(p.id) === String(editingId));
@@ -122,6 +137,9 @@ $("personForm").addEventListener("submit", e => {
   }
   if (!persist()) return;
   $("personDialog").close();
+  $("personPhoto").value = "";
+  $("personPhoto").dataset.remove = "false";
+  $("photoPreviewWrap").hidden = true;
   render();
   toast(editingId ? "Person details updated and saved." : `${name} added`);
   editingId = null;
@@ -187,6 +205,15 @@ function editPerson(id) {
   $("personType").value = (p.type || "family") === "friend" ? "friend" : "family";
   $("personLat").value = p.lat == null ? "" : p.lat;
   $("personLng").value = p.lng == null ? "" : p.lng;
+  $("personPhoto").value = "";
+  $("personPhoto").dataset.remove = "false";
+  if (p.photo) {
+    $("photoPreview").src = p.photo;
+    $("photoPreviewWrap").hidden = false;
+  } else {
+    $("photoPreview").removeAttribute("src");
+    $("photoPreviewWrap").hidden = true;
+  }
   $("personLat").disabled = false;
   $("personLng").disabled = false;
   $("personForm").querySelector('button[type="submit"]').textContent = "Save Changes";
@@ -259,3 +286,54 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
     });
   });
 }
+
+
+// Profile photo upload: resize/compress before storing in this browser's local storage.
+function compressProfilePhoto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Photo read failed"));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("Invalid image"));
+      image.onload = () => {
+        const maxSide = 512;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas unavailable"));
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.78));
+      };
+      image.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+$("personPhoto")?.addEventListener("change", async () => {
+  const file = $("personPhoto").files?.[0];
+  $("personPhoto").dataset.remove = "false";
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    $("personPhoto").value = "";
+    return toast("Please choose an image file.");
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    $("personPhoto").value = "";
+    return toast("Please choose a photo smaller than 10 MB.");
+  }
+  try {
+    const preview = await compressProfilePhoto(file);
+    $("photoPreview").src = preview;
+    $("photoPreviewWrap").hidden = false;
+  } catch { toast("Could not preview this photo. Please choose another image."); }
+});
+$("removePhotoBtn")?.addEventListener("click", () => {
+  $("personPhoto").value = "";
+  $("personPhoto").dataset.remove = "true";
+  $("photoPreview").removeAttribute("src");
+  $("photoPreviewWrap").hidden = true;
+  toast("Photo will be removed when you save this person.");
+});
