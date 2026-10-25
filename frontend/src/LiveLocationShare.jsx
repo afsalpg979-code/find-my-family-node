@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { LocateFixed, Radio, Share2, ShieldCheck, MapPinned, ExternalLink } from 'lucide-react';
 import { supabase } from './lib/supabase';
+import './LocationSharing.css';
 
 export function LiveLocationShare({ user }) {
   const [active, setActive] = useState(null);
