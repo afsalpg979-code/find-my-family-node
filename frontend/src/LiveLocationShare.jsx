@@ -7,10 +7,44 @@ export function LiveLocationShare({ user }) {
   const [active, setActive] = useState(null);
   const [notice, setNotice] = useState('');
   const watchRef = useRef(null);
+  const activeRef = useRef(null);
+
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
 
   useEffect(() => () => {
     if (watchRef.current != null && navigator.geolocation) navigator.geolocation.clearWatch(watchRef.current);
-  }, []);
+    const current = activeRef.current;
+    if (current && supabase && user?.id) {
+      // Best-effort server revocation when the sharing panel is unmounted or the user navigates away.
+      supabase.from('location_shares').update({ active: false })
+        .eq('share_token', current.token).eq('owner_id', user.id).then(() => {});
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!active) return undefined;
+    const remaining = new Date(active.expiresAt).getTime() - Date.now();
+    if (remaining <= 0) {
+      if (watchRef.current != null && navigator.geolocation) navigator.geolocation.clearWatch(watchRef.current);
+      watchRef.current = null;
+      activeRef.current = null;
+      setActive(null);
+      setNotice('The one-hour location link expired. Start a new share if needed.');
+      return undefined;
+    }
+    const timer = window.setTimeout(async () => {
+      if (watchRef.current != null && navigator.geolocation) navigator.geolocation.clearWatch(watchRef.current);
+      watchRef.current = null;
+      await supabase?.from('location_shares').update({ active: false })
+        .eq('share_token', active.token).eq('owner_id', user.id);
+      activeRef.current = null;
+      setActive(null);
+      setNotice('The one-hour location link expired.');
+    }, remaining);
+    return () => window.clearTimeout(timer);
+  }, [active, user?.id]);
 
   async function start() {
     if (!supabase || !user) { setNotice('Sign in and configure Supabase first.'); return; }
@@ -31,7 +65,9 @@ export function LiveLocationShare({ user }) {
         updated_at: new Date().toISOString()
       });
       if (error) { setNotice('Could not start sharing. Run supabase/migrations/202610250001_location_sharing.sql in your Supabase SQL Editor first.'); return; }
-      setActive({ token, expiresAt });
+      const share = { token, expiresAt };
+      activeRef.current = share;
+      setActive(share);
       setNotice('Live sharing is on. Send the link only to the person you choose. It expires in one hour.');
       watchRef.current = navigator.geolocation.watchPosition(async next => {
         const { error: updateError } = await supabase.from('location_shares').update({
@@ -66,6 +102,7 @@ export function LiveLocationShare({ user }) {
       const { error } = await supabase.from('location_shares').update({ active: false }).eq('share_token', active.token).eq('owner_id', user.id);
       if (error) { setNotice('Could not stop the share on the server. Try again online.'); return; }
     }
+    activeRef.current = null;
     setActive(null);
     setNotice('Live location sharing stopped.');
   }
