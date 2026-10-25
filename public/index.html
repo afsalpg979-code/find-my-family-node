@@ -19,10 +19,10 @@
       <p class="eyebrow">YOUR CIRCLE, CLOSER</p>
       <h1>Find My Family</h1>
       <p class="login-subtitle">Keep your favourite people one tap away.</p>
-      <div class="login-illustration" aria-hidden="true"><span class="orbit orbit-a"></span><span class="orbit orbit-b"></span><span class="login-person">👨‍👩‍👧‍👦</span><span class="login-pin pin-a">📍</span><span class="login-pin pin-b">💚</span></div>
+      <div class="login-illustration" aria-hidden="true"><div class="hero-landscape"><span class="hero-moon"></span><span class="hero-mountain mountain-back"></span><span class="hero-mountain mountain-front"></span><span class="hero-family">👨‍👩‍👧</span><span class="hero-caption">Together · Safer · Always</span></div></div>
       <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
       <form id="authForm" class="login-form">
-        <label for="authEmail">Email address</label>
+        <label for="authName" id="authNameLabel" hidden>Full name</label>\n        <input id="authName" type="text" maxlength="80" autocomplete="name" placeholder="Your full name" hidden>\n        <label for="authEmail">Email address</label>
         <input id="authEmail" type="email" required maxlength="254" autocomplete="email" placeholder="you@example.com">
         <label for="authPassword">Password</label>
         <input id="authPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters">
@@ -34,7 +34,7 @@
       <form id="localProfileForm" hidden>
         <input id="profileDisplayName" required><input id="profileEmail">
       </form>
-      <p class="login-disclaimer">Secure sign-in uses Firebase Authentication. Family contacts and locations are still stored on this device until database syncing is added.</p>
+      <p class="login-disclaimer"><span class="secure-dot"></span> Secure email sign-in · Your family stays close</p>
     </div>
   </section>
   <header class="topbar">
