@@ -36,3 +36,11 @@ drop trigger if exists fmf_message_bumps_conversation on public.messages;
 create trigger fmf_message_bumps_conversation
   after insert on public.messages
   for each row execute function public.fmf_bump_conversation_last_message();
+
+-- Enable realtime updates so other devices signed into the same account refresh contacts.
+do $$
+begin
+  alter publication supabase_realtime add table public.contact_books;
+exception when duplicate_object then null;
+when undefined_object then null;
+end $$;
