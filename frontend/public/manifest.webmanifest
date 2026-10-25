@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "Find My Family",
+  "short_name": "Family",
+  "description": "Keep your family close with contacts, maps and voluntary location sharing.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080d19",
+  "theme_color": "#080d19",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
