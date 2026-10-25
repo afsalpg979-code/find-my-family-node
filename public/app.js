@@ -457,10 +457,26 @@ function openPhotoPicker(inputId, camera = false) {
   else input.removeAttribute("capture");
   input.click();
 }
-$("personCameraBtn")?.addEventListener("click", () => openPhotoPicker("personCameraInput", true));
-$("personUploadBtn")?.addEventListener("click", () => openPhotoPicker("personPhoto", false));
-$("profileCameraBtn")?.addEventListener("click", () => openPhotoPicker("profileCameraInput", true));
-$("profileUploadBtn")?.addEventListener("click", () => openPhotoPicker("profilePhotoInput", false));
+$("personCameraBtn")?.addEventListener("click", () => {
+  $("personPhoto").value = "";
+  $("personPhoto").dataset.cameraPhoto = "";
+  openPhotoPicker("personCameraInput", true);
+});
+$("personUploadBtn")?.addEventListener("click", () => {
+  $("personCameraInput").value = "";
+  $("personPhoto").dataset.cameraPhoto = "";
+  openPhotoPicker("personPhoto", false);
+});
+$("profileCameraBtn")?.addEventListener("click", () => {
+  $("profilePhotoInput").value = "";
+  $("profilePhotoInput").dataset.cameraPhoto = "";
+  openPhotoPicker("profileCameraInput", true);
+});
+$("profileUploadBtn")?.addEventListener("click", () => {
+  $("profileCameraInput").value = "";
+  $("profilePhotoInput").dataset.cameraPhoto = "";
+  openPhotoPicker("profilePhotoInput", false);
+});
 
 function bindAlternatePhotoInput(inputId, previewId, wrapId, primaryInputId) {
   $(inputId)?.addEventListener("change", async () => {
