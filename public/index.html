@@ -20,13 +20,21 @@
       <h1>Find My Family</h1>
       <p class="login-subtitle">Keep your favourite people one tap away.</p>
       <div class="login-illustration" aria-hidden="true"><span class="orbit orbit-a"></span><span class="orbit orbit-b"></span><span class="login-person">👨‍👩‍👧‍👦</span><span class="login-pin pin-a">📍</span><span class="login-pin pin-b">💚</span></div>
-      <form id="localProfileForm" class="login-form">
-        <label for="profileDisplayName">Your name</label><input id="profileDisplayName" required maxlength="80" autocomplete="name" placeholder="Enter your name">
-        <label for="profileEmail">Email <span class="optional-label">optional</span></label><input id="profileEmail" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com">
-        <button class="login-continue" type="submit">Continue on this device <span aria-hidden="true">→</span></button>
+      <div class="auth-message" id="authMessage" role="status" aria-live="polite"></div>
+      <form id="authForm" class="login-form">
+        <label for="authEmail">Email address</label>
+        <input id="authEmail" type="email" required maxlength="254" autocomplete="email" placeholder="you@example.com">
+        <label for="authPassword">Password</label>
+        <input id="authPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters">
+        <button class="login-continue" id="emailSignInBtn" type="submit">Sign in with email <span aria-hidden="true">→</span></button>
+        <button class="auth-secondary" id="emailSignUpBtn" type="button">Create account with email</button>
+        <button class="auth-google" id="googleSignInBtn" type="button"><span class="google-g" aria-hidden="true">G</span> Continue with Google</button>
+        <button class="auth-reset" id="resetPasswordBtn" type="button">Forgot password?</button>
       </form>
-      <p class="local-mode-note"><span>🔒</span> Local profile setup · no account or password required</p>
-      <p class="login-disclaimer">This is a device-only profile, not a secure online login. Family data is not synced between phones yet.</p>
+      <form id="localProfileForm" hidden>
+        <input id="profileDisplayName" required><input id="profileEmail">
+      </form>
+      <p class="login-disclaimer">Secure sign-in uses Firebase Authentication. Family contacts and locations are still stored on this device until database syncing is added.</p>
     </div>
   </section>
   <header class="topbar">
@@ -115,11 +123,12 @@
       <div id="profilePhotoPreviewWrap" class="photo-preview-wrap" hidden><img id="profilePhotoPreview" alt="Profile photo preview"><button type="button" id="removeProfilePhotoBtn" class="secondary">Remove photo</button></div>
       <label for="profileNameEdit">Display name<input id="profileNameEdit" required maxlength="80" autocomplete="name"></label>
       <label for="profileEmailEdit">Email <span class="optional-label">optional</span><input id="profileEmailEdit" type="email" maxlength="120" autocomplete="email"></label>
-      <p class="profile-local-note">Profile is saved only in this browser on this device.</p>
+      <p class="profile-local-note">Signed-in account uses Firebase Authentication. Profile photo and family entries are still local to this device.</p>
       <div class="dialog-actions"><button type="button" id="localSignOutBtn" class="secondary">Reset profile</button><button type="submit" class="primary">Save profile</button></div>
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="/app.js"></script>
+  <script type="module" src="/auth.js"></script>
 </body>
 </html>
